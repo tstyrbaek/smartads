@@ -2,7 +2,7 @@ name: smartadd
 type: laravel
 docroot: backend/public
 php_version: "8.2"
-webserver_type: nginx-fpm
+webserver_type: apache-fpm
 router_http_port: "33004"
 router_https_port: "33005"
 xdebug_enabled: false
