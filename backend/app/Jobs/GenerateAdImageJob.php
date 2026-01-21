@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class GenerateAdImageJob implements ShouldQueue
@@ -186,6 +187,13 @@ class GenerateAdImageJob implements ShouldQueue
                 'debug' => $debug,
             ])->save();
         } catch (\Throwable $e) {
+            Log::error('GenerateAdImageJob failed', [
+                'adId' => $this->adId,
+                'companyId' => $company->id,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+
             $ad->forceFill([
                 'status' => 'failed',
                 'error' => $e->getMessage(),

@@ -14,6 +14,7 @@ database:
     type: mariadb
     version: "10.11"
 use_dns_when_possible: true
+composer_root: backend
 composer_version: "2"
 web_environment: []
 corepack_enable: false
