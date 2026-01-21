@@ -1,0 +1,58 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# DDEV
+.ddev/.dbimageBuild
+.ddev/.ddev-dockerfile
+.ddev/.homeadditions
+.ddev/.gitignore
+.ddev/.sshimageBuild
+.ddev/.webimageBuild
+.ddev/db_snapshots/
+.ddev/sequelpro.spf
+.ddev/import-db/
+.ddev/import.yaml
+
+# Laravel Backend
+backend/.env
+backend/.env.backup
+backend/.phpunit.result.cache
+backend/vendor/
+backend/node_modules/
+backend/storage/*.key
+backend/storage/app/
+backend/storage/framework/
+backend/storage/logs/
+backend/bootstrap/cache/
+backend/public/hot
+backend/public/storage
+backend/.php-cs-fixer.cache
+backend/config.php
+
+# Vue Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.tmp
