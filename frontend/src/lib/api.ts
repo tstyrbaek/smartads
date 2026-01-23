@@ -13,7 +13,7 @@ export type Brand = {
 
 export type MeResponse = {
   user: { id: number; name: string; email: string }
-  companies: { id: number; name: string }[]
+  companies: { id: number; name: string; logo_path: string | null }[]
 }
 
 export type User = {

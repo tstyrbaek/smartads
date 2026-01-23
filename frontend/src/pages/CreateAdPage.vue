@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div>
       <h1 class="text-xl font-semibold">Opret annonce</h1>
-      <p class="mt-1 text-sm text-gray-600">Skriv teksten til annoncen og generér en PNG.</p>
+      <p class="mt-1 text-sm text-gray-600">Upload billeder og skriv en tekst for at generere en ny annonce.</p>
     </div>
 
     <div class="grid gap-4 rounded-lg border bg-white p-4">
@@ -12,7 +12,7 @@
       </div>
 
       <div class="grid gap-2">
-        <label class="text-sm font-medium" for="images">Reference billeder (op til 3)</label>
+        <label class="text-sm font-medium" for="images">Billeder til annoncen (op til 3)</label>
         <input
           id="images"
           class="w-full"
@@ -24,18 +24,23 @@
         <div v-if="selectedImages.length" class="text-xs text-gray-600">Valgt: {{ selectedImages.length }}</div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
-        <button
-          class="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          :disabled="creating || text.trim() === ''"
-          @click="onCreate"
-        >
-          Generér annonce
-        </button>
+      <div class="space-y-3">
+        <div class="flex flex-col-reverse sm:flex-row gap-3">
+          <RouterLink
+            class="flex w-full justify-center rounded border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 sm:w-auto"
+            to="/ads"
+            >Tilbage</RouterLink
+          >
+          <button
+            class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
+            :disabled="creating || text.trim() === ''"
+            @click="onCreate"
+          >
+            Generér annonce
+          </button>
+        </div>
 
-        <RouterLink class="rounded px-4 py-2 text-sm font-medium hover:bg-gray-100" to="/ads">Tilbage</RouterLink>
-
-        <label class="ml-2 inline-flex items-center gap-2 text-sm text-gray-700">
+        <label class="hidden ml-2 items-center gap-2 text-sm text-gray-700">
           <input v-model="showDebug" type="checkbox" class="h-4 w-4" />
           Debug prompt
         </label>

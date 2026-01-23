@@ -6,6 +6,12 @@
   # Block direct access to internal folders
   RewriteRule ^backend/(?!public/).* - [F,L]
 
+  # ✅ Serve /storage files directly if they exist (do NOT route to Laravel)
+  RewriteCond %{REQUEST_URI} ^/storage/ [NC]
+  RewriteCond %{DOCUMENT_ROOT}/backend/public%{REQUEST_URI} -f [OR]
+  RewriteCond %{DOCUMENT_ROOT}/backend/public%{REQUEST_URI} -d
+  RewriteRule ^ backend/public%{REQUEST_URI} [L]
+
   # Route backend requests (Laravel)
   RewriteCond %{REQUEST_URI} ^/(admin|api|sanctum|storage)(/|$) [NC]
   RewriteRule ^ backend/public/index.php [L,QSA]

@@ -3,19 +3,21 @@
     <header class="border-b bg-white">
       <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
         <div class="flex items-center gap-2">
-          <div class="font-semibold text-2xl text-blue-600">SmartAdd</div>
+          <RouterLink to="/" class="font-semibold text-2xl text-green-600">SmartAdd</RouterLink>
           <div v-if="isAuthenticated && activeCompanyName" class="text-sm text-gray-600">
             <span class="text-gray-400">/</span>
             <span class="ml-2">{{ activeCompanyName }}</span>
           </div>
         </div>
         <div v-if="isAuthenticated" class="flex items-center gap-2">
-          <nav class="flex gap-3 text-sm">
+          <!-- Desktop Menu -->
+          <nav class="hidden md:flex gap-3 text-sm">
             <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
             <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/ads">Annoncer</RouterLink>
           </nav>
 
-          <div class="relative">
+          <!-- User Profile Dropdown -->
+          <div class="relative" ref="userMenuContainer">
             <button
               class="ml-1 inline-flex h-9 w-9 items-center justify-center rounded hover:bg-gray-100"
               type="button"
@@ -74,7 +76,39 @@
               </button>
             </div>
           </div>
+          <!-- Mobile Menu Button -->
+          <div class="md:hidden">
+            <button
+              class="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-gray-100"
+              type="button"
+              @click="mobileMenuOpen = !mobileMenuOpen"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="3" x2="21" y1="6" y2="6" />
+                <line x1="3" x2="21" y1="12" y2="12" />
+                <line x1="3" x2="21" y1="18" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div v-if="mobileMenuOpen" class="md:hidden border-t">
+        <nav class="flex flex-col p-4 text-sm" @click="mobileMenuOpen = false">
+          <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
+          <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/ads">Annoncer</RouterLink>
+        </nav>
       </div>
     </header>
 
@@ -85,58 +119,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { activeCompanyId, authToken, getMe, logout, type MeResponse } from './lib/api'
 
-const isAuthenticated = computed(() => Boolean(authToken.value))
-
 const router = useRouter()
+const isAuthenticated = computed(() => Boolean(authToken.value))
 const userMenuOpen = ref(false)
+const mobileMenuOpen = ref(false)
+const userMenuContainer = ref<HTMLElement | null>(null)
+
 const me = ref<MeResponse | null>(null)
-
 const activeCompanyName = computed(() => {
-  const id = Number(activeCompanyId.value)
-  if (!id || !me.value?.companies) return ''
-  return me.value.companies.find((c) => c.id === id)?.name ?? ''
+  if (!me.value?.companies?.length || !activeCompanyId.value) return null
+  return me.value.companies.find((c) => String(c.id) === activeCompanyId.value)?.name ?? null
 })
-
-async function loadMe() {
-  if (!isAuthenticated.value) {
-    me.value = null
-    return
-  }
-
-  try {
-    me.value = await getMe()
-  } catch {
-    me.value = null
-  }
-}
 
 async function onLogout() {
   try {
     await logout()
   } finally {
-    router.push('/login')
+    me.value = null
+    await router.push('/login')
   }
 }
 
-onMounted(loadMe)
+async function loadMe() {
+  if (isAuthenticated.value) {
+    try {
+      me.value = await getMe()
+    } catch (e) {
+      console.error('Failed to load user data, logging out.', e)
+      await onLogout()
+    }
+  } else {
+    me.value = null
+  }
+}
 
-watch(
-  () => authToken.value,
-  () => {
+watch(authToken, () => loadMe(), { immediate: true })
+
+const handleClickOutside = (event: MouseEvent) => {
+  if (userMenuContainer.value && !userMenuContainer.value.contains(event.target as Node)) {
     userMenuOpen.value = false
-    loadMe()
-  },
-)
+  }
+}
 
-watch(
-  () => activeCompanyId.value,
-  () => {
-    loadMe()
-  },
-)
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

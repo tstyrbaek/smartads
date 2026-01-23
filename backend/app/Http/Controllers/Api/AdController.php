@@ -194,13 +194,17 @@ class AdController
 
     private function serializeAd(Ad $ad): array
     {
+        $filePath = null;
+        if (is_string($ad->local_file_path) && $ad->local_file_path !== '') {
+            $filePath = '/storage/' . ltrim($ad->local_file_path, '/');
+        }
+
         return [
             'id' => $ad->id,
             'text' => $ad->text,
             'status' => $ad->status,
             'nanobananaTaskId' => null,
-            'resultImageUrl' => null,
-            'localFilePath' => $ad->local_file_path,
+            'localFilePath' => $filePath,
             'error' => $ad->error,
             'updatedAt' => $ad->updated_at?->toISOString(),
         ];

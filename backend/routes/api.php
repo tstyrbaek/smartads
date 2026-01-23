@@ -44,14 +44,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me', function (Request $request) {
         $user = $request->user();
+        if (!$user) {
+            abort(401);
+        }
+
+        $companies = $user->companies()->with('brand')->orderBy('name')->get();
 
         return response()->json([
             'user' => [
-                'id' => $user?->id,
-                'name' => $user?->name,
-                'email' => $user?->email,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
             ],
-            'companies' => $user?->companies()->select(['companies.id', 'companies.name'])->orderBy('name')->get(),
+            'companies' => $companies->map(function ($company) {
+                return [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'logo_path' => $company->brand?->logo_path ? Illuminate\Support\Facades\Storage::url($company->brand->logo_path) : null,
+                ];
+            }),
         ]);
     });
 

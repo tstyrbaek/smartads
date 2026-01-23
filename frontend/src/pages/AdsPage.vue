@@ -1,74 +1,98 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-start justify-between gap-4">
+    <div class="md:flex md:items-start md:justify-between md:gap-4">
       <div>
         <h1 class="text-xl font-semibold">Annoncer</h1>
         <p class="mt-1 text-sm text-gray-600">Oversigt over dine annoncer og deres status.</p>
       </div>
 
-      <RouterLink
-        class="inline-flex rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        to="/ads/new"
-      >
-        Opret annonce
-      </RouterLink>
+      <div class="mt-4 md:mt-0">
+        <RouterLink
+          class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 md:w-auto"
+          to="/ads/new"
+        >
+          Opret annonce
+        </RouterLink>
+      </div>
     </div>
 
     <div v-if="error" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
       {{ error }}
     </div>
 
-    <div class="rounded-lg border bg-white">
-      <div class="grid grid-cols-[24px_minmax(0,1fr)_140px_60px] gap-3 border-b bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-        <div></div>
-        <div>Tekst</div>
-        <div>Opdateret</div>
-        <div></div>
-      </div>
-
+    <div>
       <div v-if="loading" class="px-4 py-6 text-sm text-gray-700">Henter...</div>
 
       <div v-else-if="ads.length === 0" class="px-4 py-6 text-sm text-gray-700">Ingen annoncer endnu.</div>
 
-      <div v-else>
-        <div
-          v-for="row in ads"
-          :key="row.id"
-          class="grid grid-cols-[24px_minmax(0,1fr)_140px_60px] gap-3 border-b px-4 py-3 text-sm"
-        >
-          <div class="flex items-center">
-            <span
-              class="inline-block h-3 w-3 rounded-full"
-              :class="statusDotClass(row.status)"
-              :title="row.status"
-            ></span>
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <div v-for="ad in ads" :key="ad.id" class="overflow-hidden rounded-lg border bg-white shadow-sm">
+          <div class="relative">
+            <div class="aspect-square w-full bg-gray-100">
+              <img
+                v-if="ad.localFilePath"
+                :src="toAbsoluteBackendUrl(ad.localFilePath)"
+                class="h-full w-full object-cover"
+              />
+              <div v-else class="flex h-full w-full items-center justify-center">
+                <div class="text-center text-xs text-gray-500">
+                  <div v-if="ad.status === 'creating' || ad.status === 'generating'" class="flex flex-col items-center gap-2">
+                    <span class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    <span>Genererer...</span>
+                  </div>
+                  <span v-else-if="ad.status === 'failed'">Fejlet</span>
+                  <span v-else>Intet billede</span>
+                </div>
+              </div>
+            </div>
+            <div class="absolute bottom-2 right-2 flex items-center justify-end gap-2">
+              <a
+                v-if="ad.status === 'success' && ad.localFilePath"
+                :href="toAbsoluteBackendUrl(`/api/ads/${ad.id}/download`)"
+                class="rounded bg-white/80 p-2 text-gray-700 hover:bg-white"
+                title="Download"
+                download
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </a>
+              <button
+                v-if="ad.status === 'success' && ad.localFilePath"
+                class="rounded bg-white/80 p-2 text-gray-700 hover:bg-white"
+                type="button"
+                title="Vis"
+                @click="openPreview(ad)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+              <button
+                class="rounded bg-white/80 p-2 text-red-700 hover:bg-white disabled:opacity-50"
+                type="button"
+                title="Slet"
+                :disabled="deletingId === ad.id"
+                @click="onDelete(ad)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="truncate">{{ row.text }}</div>
-          <div class="text-xs text-gray-600">{{ formatDate(row.updatedAt) }}</div>
-          <div class="flex items-center justify-end gap-2">
-            <button
-              v-if="row.status === 'success' && row.localFilePath"
-              class="rounded p-1 text-blue-700 hover:bg-blue-50"
-              type="button"
-              title="Vis"
-              @click="openPreview(row)"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </button>
-            <button
-              class="rounded p-1 text-red-700 hover:bg-red-50 disabled:opacity-50"
-              type="button"
-              title="Slet"
-              :disabled="deletingId === row.id"
-              @click="onDelete(row)"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+          <div class="p-3">
+            <div class="flex items-start justify-between gap-2">
+              <p class="line-clamp-3 text-xs text-gray-700">{{ ad.text }}</p>
+              <span
+                class="inline-block h-3 w-3 flex-shrink-0 rounded-full"
+                :class="statusDotClass(ad.status)"
+                :title="ad.status"
+              ></span>
+            </div>
           </div>
         </div>
       </div>
@@ -146,7 +170,7 @@ function formatDate(iso?: string | null) {
 function openPreview(ad: Ad) {
   const local = ad.localFilePath
   if (!local) return
-  previewUrl.value = toAbsoluteBackendUrl('/storage/' + local.replace(/^\/+/, ''))
+  previewUrl.value = toAbsoluteBackendUrl(local)
   previewOpen.value = true
 }
 
@@ -175,6 +199,7 @@ async function load() {
   error.value = null
   try {
     const res = await listAds()
+    console.log('API response for ads:', res.ads)
     ads.value = res.ads
     ensurePolling()
   } catch (e) {
