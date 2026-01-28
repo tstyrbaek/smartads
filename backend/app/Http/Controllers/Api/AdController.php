@@ -34,6 +34,10 @@ class AdController
         $companyId = (int) $request->attributes->get('active_company_id');
         $user = $request->user();
 
+        if (!$user) {
+            abort(401);
+        }
+
         $validated = $request->validate([
             'text' => ['required', 'string'],
             'instructions' => ['nullable', 'string', 'max:2000'],
@@ -56,6 +60,13 @@ class AdController
         }
 
         $id = (string) Str::ulid();
+        $datePart = now()->format('ymd');
+        $shortId = substr($id, -6);
+        $companyPart = Str::slug((string) ($company->name ?? 'company'));
+        if ($companyPart === '') {
+            $companyPart = 'company';
+        }
+        $title = $companyPart . '-' . $datePart . '-' . $shortId;
 
         $imagePaths = [];
         $files = $request->file('images');
@@ -77,7 +88,8 @@ class AdController
         $ad = Ad::query()->create([
             'id' => $id,
             'company_id' => $companyId,
-            'user_id' => $user?->id,
+            'user_id' => $user->id,
+            'title' => $title,
             'text' => (string) $validated['text'],
             'instructions' => isset($validated['instructions']) ? (string) $validated['instructions'] : null,
             'status' => 'generating',
@@ -203,6 +215,7 @@ class AdController
 
         return [
             'id' => $ad->id,
+            'title' => $ad->title,
             'text' => $ad->text,
             'instructions' => $ad->instructions,
             'status' => $ad->status,

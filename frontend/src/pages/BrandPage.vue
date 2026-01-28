@@ -27,7 +27,7 @@
             type="url"
             placeholder="https://..."
           />
-          <p class="text-xs text-gray-600">AI'en bruger hjemmesiden til at lære om dit firma.</p>
+          <p class="text-xs text-gray-600">Angiv dit firmas hjemmeside.</p>
         </div>
 
         <div class="grid gap-2">

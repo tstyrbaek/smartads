@@ -40,6 +40,8 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-3-pro-image-preview'),
         'aspect_ratio' => env('GEMINI_ASPECT_RATIO', '1:1'),
         'image_size' => env('GEMINI_IMAGE_SIZE', '1K'),
+        'usd_to_dkk' => (float) env('GEMINI_USD_TO_DKK', 7.0),
+        'webhook_secret' => env('GEMINI_WEBHOOK_SECRET'),
     ],
 
 ];

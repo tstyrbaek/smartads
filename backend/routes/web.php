@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanySelectionController;
 use App\Http\Controllers\CronQueueController;
@@ -50,6 +51,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/companies/{company}/edit', [AdminCompanyController::class, 'edit'])->name('companies.edit');
         Route::patch('/companies/{company}', [AdminCompanyController::class, 'update'])->name('companies.update');
         Route::delete('/companies/{company}', [AdminCompanyController::class, 'destroy'])->name('companies.destroy');
+
+        Route::get('/ads', [AdminAdController::class, 'index'])->name('ads.index');
 
         Route::get('/brands', fn () => redirect()->route('admin.companies.index'))->name('brands.index');
         Route::get('/brands/create', fn () => redirect()->route('admin.companies.create'))->name('brands.create');

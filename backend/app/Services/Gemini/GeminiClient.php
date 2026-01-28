@@ -18,7 +18,7 @@ class GeminiClient
 
     /**
      * @param array<int, array{mimeType: string, data: string}> $referenceImages
-     * @return array{mimeType: string, data: string}
+     * @return array{mimeType: string, data: string, promptTokens?: int|null, outputTokens?: int|null, totalTokens?: int|null}
      */
     public function generateImage(
         string $model,
@@ -97,6 +97,14 @@ class GeminiClient
             throw new \RuntimeException('gemini_missing_parts');
         }
 
+        $promptTokens = data_get($json, 'usageMetadata.promptTokenCount');
+        $outputTokens = data_get($json, 'usageMetadata.candidatesTokenCount');
+        $totalTokens = data_get($json, 'usageMetadata.totalTokenCount');
+
+        $promptTokensInt = is_numeric($promptTokens) ? (int) $promptTokens : null;
+        $outputTokensInt = is_numeric($outputTokens) ? (int) $outputTokens : null;
+        $totalTokensInt = is_numeric($totalTokens) ? (int) $totalTokens : null;
+
         foreach ($partsOut as $part) {
             if (!is_array($part)) {
                 continue;
@@ -109,6 +117,9 @@ class GeminiClient
                 return [
                     'mimeType' => $mimeType,
                     'data' => $data,
+                    'promptTokens' => $promptTokensInt,
+                    'outputTokens' => $outputTokensInt,
+                    'totalTokens' => $totalTokensInt,
                 ];
             }
         }

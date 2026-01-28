@@ -24,6 +24,10 @@
                         <x-nav-link :href="route('admin.companies.index')" :active="request()->routeIs('admin.companies.*')">
                             Companies
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.ads.index')" :active="request()->routeIs('admin.ads.*')">
+                            Ads
+                        </x-nav-link>
                     @elseif (Auth::user()?->isBusiness())
                         <x-nav-link :href="route('company.edit')" :active="request()->routeIs('company.*')">
                             Company

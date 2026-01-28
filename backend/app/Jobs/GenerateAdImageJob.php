@@ -177,6 +177,16 @@ class GenerateAdImageJob implements ShouldQueue
             $mimeType = (string) ($imagePart['mimeType'] ?? 'application/octet-stream');
             $data = (string) ($imagePart['data'] ?? '');
 
+            $promptTokens = isset($imagePart['promptTokens']) && is_numeric($imagePart['promptTokens'])
+                ? (int) $imagePart['promptTokens']
+                : null;
+            $outputTokens = isset($imagePart['outputTokens']) && is_numeric($imagePart['outputTokens'])
+                ? (int) $imagePart['outputTokens']
+                : null;
+            $totalTokens = isset($imagePart['totalTokens']) && is_numeric($imagePart['totalTokens'])
+                ? (int) $imagePart['totalTokens']
+                : null;
+
             $generatedBin = base64_decode($data, true);
             if (!is_string($generatedBin) || $generatedBin === '') {
                 throw new \RuntimeException('gemini_image_decode_failed');
@@ -215,6 +225,9 @@ class GenerateAdImageJob implements ShouldQueue
                 'status' => 'success',
                 'local_file_path' => $relative,
                 'error' => null,
+                'prompt_tokens' => $promptTokens,
+                'output_tokens' => $outputTokens,
+                'total_tokens' => $totalTokens,
                 'debug' => $debug,
             ])->save();
         } catch (\Throwable $e) {

@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getMe, setActiveCompanyId, toAbsoluteBackendUrl, type MeResponse } from '../lib/api'
+import { activeCompanyId, getMe, setActiveCompanyId, toAbsoluteBackendUrl, type MeResponse } from '../lib/api'
 
 const router = useRouter()
 
@@ -49,6 +49,15 @@ const message = ref<string | null>(null)
 async function load() {
   const me = await getMe()
   companies.value = me.companies
+
+  const storedActiveId = activeCompanyId.value ? Number(activeCompanyId.value) : null
+  const preferredId = storedActiveId && !Number.isNaN(storedActiveId) ? storedActiveId : null
+
+  if (preferredId && me.companies.some((c) => c.id === preferredId)) {
+    companyId.value = preferredId
+    return
+  }
+
   companyId.value = me.companies[0]?.id ?? null
 }
 

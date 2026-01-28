@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\GeminiWebhookController;
 use App\Http\Controllers\CronQueueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
 Route::get('/cron/queue', [CronQueueController::class, 'run']);
+
+Route::post('/webhooks/gemini', [GeminiWebhookController::class, 'handle']);
 
 Route::post('/auth/login', function (Request $request) {
     $validated = $request->validate([
