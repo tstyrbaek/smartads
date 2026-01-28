@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 text-gray-900">
-    <header class="border-b bg-white">
+    <header class="border-b bg-white fixed top-0 left-0 right-0 z-50">
       <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
         <div class="flex items-center gap-2">
           <RouterLink to="/" class="font-semibold text-2xl text-green-600">SmartAdd</RouterLink>
@@ -112,7 +112,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-4xl px-4 py-8">
+    <main class="mx-auto max-w-4xl px-4 py-8 pt-20">
       <RouterView />
     </main>
   </div>

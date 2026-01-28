@@ -8,6 +8,9 @@ export type Brand = {
   primaryColor3?: string
   primaryColor4?: string
   logoPath?: string
+  fonts?: string
+  slogan?: string
+  visual_guidelines?: string
   updatedAt?: string
 }
 

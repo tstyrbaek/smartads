@@ -31,6 +31,9 @@ class BrandController extends Controller
             'primaryColor3' => $brand?->color_3,
             'primaryColor4' => $brand?->color_4,
             'logoPath' => $brand?->logo_path ? '/storage/' . $brand->logo_path : null,
+            'fonts' => $brand?->fonts,
+            'slogan' => $brand?->slogan,
+            'visual_guidelines' => $brand?->visual_guidelines,
             'updatedAt' => $brand?->updated_at?->toISOString(),
         ]);
     }
@@ -48,6 +51,9 @@ class BrandController extends Controller
             'primaryColor2' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'primaryColor3' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'primaryColor4' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'fonts' => ['nullable', 'string', 'max:255'],
+            'slogan' => ['nullable', 'string', 'max:255'],
+            'visual_guidelines' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
@@ -73,6 +79,9 @@ class BrandController extends Controller
             'color_2' => $validated['primaryColor2'],
             'color_3' => $validated['primaryColor3'] ?? null,
             'color_4' => $validated['primaryColor4'] ?? null,
+            'fonts' => $validated['fonts'] ?? null,
+            'slogan' => $validated['slogan'] ?? null,
+            'visual_guidelines' => $validated['visual_guidelines'] ?? null,
         ]);
 
         if ($request->hasFile('logo')) {
@@ -97,6 +106,9 @@ class BrandController extends Controller
             'primaryColor3' => $brand->color_3,
             'primaryColor4' => $brand->color_4,
             'logoPath' => $brand->logo_path ? '/storage/' . $brand->logo_path : null,
+            'fonts' => $brand->fonts,
+            'slogan' => $brand->slogan,
+            'visual_guidelines' => $brand->visual_guidelines,
             'updatedAt' => $brand->updated_at?->toISOString(),
         ]);
     }

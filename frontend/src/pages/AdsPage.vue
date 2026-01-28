@@ -84,16 +84,6 @@
               </button>
             </div>
           </div>
-          <div class="p-3">
-            <div class="flex items-start justify-between gap-2">
-              <p class="line-clamp-3 text-xs text-gray-700">{{ ad.text }}</p>
-              <span
-                class="inline-block h-3 w-3 flex-shrink-0 rounded-full"
-                :class="statusDotClass(ad.status)"
-                :title="ad.status"
-              ></span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

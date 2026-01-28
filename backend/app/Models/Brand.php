@@ -15,6 +15,9 @@ class Brand extends Model
         'color_2',
         'color_3',
         'color_4',
+        'fonts',
+        'slogan',
+        'visual_guidelines',
     ];
 
     public function company(): BelongsTo
