@@ -35,6 +35,13 @@ backend/public/hot
 backend/public/storage
 backend/.php-cs-fixer.cache
 backend/config.php
+backend/public/assets
+backend/public/hot
+backend/public/storage
+backend/storage/logs
+backend/storage/pail
+backend/storage/framework
+backend/storage/app
 
 # Vue Frontend
 frontend/node_modules/
