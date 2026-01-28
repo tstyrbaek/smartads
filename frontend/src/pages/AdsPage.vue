@@ -126,7 +126,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { deleteAd, listAds, toAbsoluteBackendUrl, type Ad } from '../lib/api'
+import Pusher from 'pusher-js'
+import { activeCompanyId, authToken, deleteAd, listAds, toAbsoluteBackendUrl, type Ad } from '../lib/api'
 
 const route = useRoute()
 
@@ -208,6 +209,81 @@ async function load() {
 
 let pollTimer: number | null = null
 
+let pusher: Pusher | null = null
+let pusherChannel: Pusher.Channel | null = null
+let realtimeActive = false
+
+function teardownRealtime() {
+  if (pusherChannel && pusher) {
+    try {
+      pusher.unsubscribe(pusherChannel.name)
+    } catch {
+      // ignore
+    }
+  }
+  pusherChannel = null
+
+  if (pusher) {
+    try {
+      pusher.disconnect()
+    } catch {
+      // ignore
+    }
+  }
+  pusher = null
+  realtimeActive = false
+}
+
+function setupRealtime() {
+  const companyId = activeCompanyId.value
+  const token = authToken.value
+  const key = import.meta.env.VITE_PUSHER_KEY as string | undefined
+  const cluster = import.meta.env.VITE_PUSHER_CLUSTER as string | undefined
+
+  if (!companyId || !token || !key || !cluster) {
+    realtimeActive = false
+    return
+  }
+
+  realtimeActive = true
+  clearPoll()
+
+  pusher = new Pusher(key, {
+    cluster,
+    channelAuthorization: {
+      endpoint: `${window.location.origin}/api/broadcasting/auth`,
+      transport: 'ajax',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    },
+  })
+
+  const channelName = `private-company.${companyId}`
+  pusherChannel = pusher.subscribe(channelName)
+
+  pusherChannel.bind('ad.updated', (data: any) => {
+    const id = String(data?.id ?? '')
+    if (!id) return
+
+    const next = [...ads.value]
+    const idx = next.findIndex((a) => a.id === id)
+    if (idx !== -1) {
+      next[idx] = {
+        ...next[idx],
+        status: data?.status ?? next[idx].status,
+        localFilePath: data?.localFilePath ?? next[idx].localFilePath,
+        updatedAt: data?.updatedAt ?? next[idx].updatedAt,
+      }
+      ads.value = next
+    } else {
+      load().catch(() => {
+        // ignore
+      })
+    }
+  })
+}
+
 function clearPoll() {
   if (pollTimer) {
     window.clearInterval(pollTimer)
@@ -217,6 +293,7 @@ function clearPoll() {
 
 function ensurePolling() {
   clearPoll()
+  if (realtimeActive) return
   if (!hasGenerating.value) return
 
   pollTimer = window.setInterval(() => {
@@ -229,6 +306,8 @@ function ensurePolling() {
 onMounted(async () => {
   await load()
 
+  setupRealtime()
+
   if (route.query.created) {
     // no-op for now; placeholder so we can highlight later if needed
   }
@@ -236,5 +315,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearPoll()
+  teardownRealtime()
 })
 </script>

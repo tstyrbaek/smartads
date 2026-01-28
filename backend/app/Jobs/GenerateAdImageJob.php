@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\AdUpdated;
 use App\Models\Ad;
 use App\Models\Company;
 use App\Services\Gemini\GeminiClient;
@@ -230,6 +231,14 @@ class GenerateAdImageJob implements ShouldQueue
                 'total_tokens' => $totalTokens,
                 'debug' => $debug,
             ])->save();
+
+            event(new AdUpdated(
+                (int) $company->id,
+                (string) $ad->id,
+                (string) $ad->status,
+                '/storage/' . ltrim((string) $relative, '/'),
+                $ad->updated_at?->toISOString(),
+            ));
         } catch (\Throwable $e) {
             Log::error('GenerateAdImageJob failed', [
                 'adId' => $this->adId,
@@ -242,6 +251,14 @@ class GenerateAdImageJob implements ShouldQueue
                 'status' => 'failed',
                 'error' => $e->getMessage(),
             ])->save();
+
+            event(new AdUpdated(
+                (int) $company->id,
+                (string) $ad->id,
+                (string) $ad->status,
+                null,
+                $ad->updated_at?->toISOString(),
+            ));
         } finally {
             Storage::disk('local')->deleteDirectory('tmp/ad-input/' . $ad->id);
         }
