@@ -57,3 +57,4 @@ coverage/
 *.bak
 *.tmp
 frontend/.env
+.env
