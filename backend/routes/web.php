@@ -7,6 +7,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanySelectionController;
+use App\Http\Controllers\CronQueueController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->group(function () {
@@ -60,6 +61,8 @@ Route::prefix('admin')->group(function () {
 
     require __DIR__ . '/auth.php';
 });
+
+Route::get('/cron/queue', [CronQueueController::class, 'run']);
 
 Route::get('/', function () {
     return response()->file(public_path('index.html'));
