@@ -48,7 +48,7 @@
             <div class="absolute bottom-2 right-2 flex items-center justify-end gap-2">
               <a
                 v-if="ad.status === 'success' && ad.localFilePath"
-                :href="toAbsoluteBackendUrl(`/api/ads/${ad.id}/download`)"
+                :href="cardDownloadUrl(ad)"
                 class="rounded bg-white/80 p-2 text-gray-700 hover:bg-white"
                 title="Download"
                 download
@@ -164,6 +164,12 @@ function openPreview(ad: Ad) {
   previewOpen.value = true
 }
 
+function cardDownloadUrl(ad: Ad): string | undefined {
+  const local = ad.localFilePath
+  if (!local) return undefined
+  return toAbsoluteBackendUrl(local)
+}
+
 function closePreview() {
   previewOpen.value = false
   previewUrl.value = null
@@ -217,7 +223,7 @@ function ensurePolling() {
     load().catch(() => {
       // ignore polling errors
     })
-  }, 2500)
+  }, 10000)
 }
 
 onMounted(async () => {

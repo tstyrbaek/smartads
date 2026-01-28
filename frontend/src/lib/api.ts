@@ -28,6 +28,7 @@ export type User = {
 export type Ad = {
   id: string
   text: string
+  instructions?: string | null
   status: 'creating' | 'generating' | 'success' | 'failed'
   nanobananaTaskId?: string | null
   resultImageUrl?: string | null
@@ -168,9 +169,10 @@ export type AdCreateDebug = {
 
 export async function createAd(
   text: string,
-  opts?: { debug?: boolean; images?: File[] },
+  opts?: { debug?: boolean; images?: File[]; instructions?: string },
 ): Promise<{ adId: string; status: string; debug?: AdCreateDebug | null }> {
-  const images = (opts?.images ?? []).slice(0, 3)
+  const images = (opts?.images ?? []).slice(0, 5)
+  const instructions = (opts?.instructions ?? '').trim()
 
   const res =
     images.length > 0
@@ -179,6 +181,7 @@ export async function createAd(
           body: (() => {
             const form = new FormData()
             form.set('text', text)
+            if (instructions !== '') form.set('instructions', instructions)
             if (opts?.debug === true) form.set('debug', '1')
             for (const img of images) {
               form.append('images[]', img)
@@ -189,7 +192,7 @@ export async function createAd(
       : await apiFetch('/api/ads', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text, debug: opts?.debug === true }),
+          body: JSON.stringify({ text, instructions: instructions !== '' ? instructions : null, debug: opts?.debug === true }),
         })
   return (await res.json()) as { adId: string; status: string; debug?: AdCreateDebug | null }
 }

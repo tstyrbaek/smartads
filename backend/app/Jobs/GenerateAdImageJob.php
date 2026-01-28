@@ -74,15 +74,45 @@ class GenerateAdImageJob implements ShouldQueue
 
         $colorsText = $colors !== [] ? implode(', ', $colors) : '';
 
+        $brandSnapshot = [
+            'colors' => $colors,
+            'logo_path' => $logoPath,
+            'fonts' => $brand?->fonts,
+            'slogan' => $brand?->slogan,
+            'visual_guidelines' => $brand?->visual_guidelines,
+            'company_description' => $company->company_description,
+            'target_audience_description' => $company->target_audience_description,
+        ];
+
+        $instructions = is_string($ad->instructions) ? trim($ad->instructions) : '';
+
         $prompt = "Create a clean, modern square 1:1 web advertisement image.\n";
         if ($colorsText !== '') {
             $prompt .= "Use the brand colors: {$colorsText}.\n";
+        }
+        if (is_string($brand?->fonts) && trim($brand->fonts) !== '') {
+            $prompt .= "Brand fonts: " . trim($brand->fonts) . ".\n";
+        }
+        if (is_string($brand?->slogan) && trim($brand->slogan) !== '') {
+            $prompt .= "Brand slogan/tagline: \"" . trim($brand->slogan) . "\".\n";
+        }
+        if (is_string($brand?->visual_guidelines) && trim($brand->visual_guidelines) !== '') {
+            $prompt .= "Visual guidelines: " . trim($brand->visual_guidelines) . "\n";
         }
         $prompt .= "Company description: {$company->company_description}.\n";
         $prompt .= "Target audience: {$company->target_audience_description}.\n";
         $prompt .= "Logo: Use the provided reference logo image (do not invent a new logo). Include EXACTLY ONE logo in the design. Do not duplicate the logo elsewhere.\n";
         $prompt .= "The ad text must be clearly readable and spelled correctly, and MUST appear EXACTLY as written (do not change wording, spelling):\n\"{$ad->text}\"\n";
+        if ($instructions !== '') {
+            $prompt .= "User instructions (follow these while keeping the ad text EXACTLY as written):\n{$instructions}\n";
+        }
         $prompt .= "Minimal layout, high contrast, professional typography, safe margins.";
+
+        $ad->forceFill([
+            'prompt' => $prompt,
+            'prompt_version' => 'v1',
+            'brand_snapshot' => $brandSnapshot,
+        ])->save();
 
         $referenceImages = [];
 
@@ -132,6 +162,7 @@ class GenerateAdImageJob implements ShouldQueue
 
         if ($productCount > 0) {
             $prompt .= "\nProduct images requirement: You MUST include ALL provided product reference images ({$productCount}) in the final ad.\n";
+            $prompt .= "Product image priority: The product reference images are provided in PRIORITY order. The FIRST product image is the PRIMARY image and should be the most prominent. The following images are secondary and can be smaller.\n";
             $prompt .= "Layout requirement: Show all product images clearly (for example as a collage/grid or multiple tiles). Do not omit any of them.\n";
         }
 

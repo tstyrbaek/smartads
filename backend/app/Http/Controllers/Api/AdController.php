@@ -36,6 +36,7 @@ class AdController
 
         $validated = $request->validate([
             'text' => ['required', 'string'],
+            'instructions' => ['nullable', 'string', 'max:2000'],
             'debug' => ['nullable'],
             'images' => ['nullable'],
             'images.*' => ['nullable', 'image', 'max:5120'],
@@ -59,7 +60,7 @@ class AdController
         $imagePaths = [];
         $files = $request->file('images');
         if (is_array($files)) {
-            $max = min(3, count($files));
+            $max = min(5, count($files));
             for ($i = 0; $i < $max; $i++) {
                 $file = $files[$i] ?? null;
                 if (!$file) {
@@ -78,6 +79,7 @@ class AdController
             'company_id' => $companyId,
             'user_id' => $user?->id,
             'text' => (string) $validated['text'],
+            'instructions' => isset($validated['instructions']) ? (string) $validated['instructions'] : null,
             'status' => 'generating',
             'input_image_paths' => $imagePaths,
         ]);
@@ -202,6 +204,7 @@ class AdController
         return [
             'id' => $ad->id,
             'text' => $ad->text,
+            'instructions' => $ad->instructions,
             'status' => $ad->status,
             'nanobananaTaskId' => null,
             'localFilePath' => $filePath,

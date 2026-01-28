@@ -16,6 +16,10 @@ class Ad extends Model
         'company_id',
         'user_id',
         'text',
+        'instructions',
+        'prompt',
+        'prompt_version',
+        'brand_snapshot',
         'status',
         'error',
         'local_file_path',
@@ -25,6 +29,7 @@ class Ad extends Model
 
     protected $casts = [
         'input_image_paths' => 'array',
+        'brand_snapshot' => 'array',
         'debug' => 'array',
     ];
 
