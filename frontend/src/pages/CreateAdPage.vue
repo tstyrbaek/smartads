@@ -7,7 +7,10 @@
 
     <div class="grid gap-4 rounded-lg border bg-white p-4">
       <div class="grid gap-2">
-        <label class="text-sm font-medium" for="text">Annonce tekst</label>
+        <div class="flex items-center justify-between gap-3">
+          <label class="text-sm font-medium" for="text">Annonce tekst</label>
+          <SpeechToTextButton v-model="text" @error="onSpeechError" />
+        </div>
         <textarea id="text" v-model="text" class="min-h-28 w-full rounded border px-3 py-2" />
         <p class="text-xs text-gray-600">
           Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
@@ -19,12 +22,20 @@
           Instrukser til AI (valgfrit)
         </summary>
         <div class="mt-3 grid gap-2">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-sm font-medium" for="instructions">Instrukser</label>
+            <SpeechToTextButton v-model="instructions" @error="onSpeechError" />
+          </div>
           <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border bg-white px-3 py-2" />
           <p class="text-xs text-gray-600">
             Beskriv hvordan annoncen skal se ud. Fx "minimalistisk", "ingen mennesker", "stort CTA", "lys baggrund".
           </p>
         </div>
       </details>
+
+      <div v-if="speechError" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        {{ speechError }}
+      </div>
 
       <div class="rounded border bg-gray-50 p-3">
         <div class="grid gap-2">
@@ -135,6 +146,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createAd, getAd, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
+import SpeechToTextButton from '../components/SpeechToTextButton.vue'
 
 const router = useRouter()
 
@@ -149,6 +161,8 @@ const previewUrl = ref<string | null>(null)
 
 const showDebug = ref(false)
 const debugInfo = ref<AdCreateDebug | null>(null)
+
+const speechError = ref<string | null>(null)
 
 type SelectedImageItem = { id: string; file: File; url: string }
 
@@ -199,6 +213,10 @@ function onDrop(targetId: string) {
   items.splice(toIndex, 0, moved)
   selectedImageItems.value = items
   dragSourceId.value = null
+}
+
+function onSpeechError(message: string) {
+  speechError.value = message
 }
 
 const selectedImages = computed(() => selectedImageItems.value.map((x) => x.file))
