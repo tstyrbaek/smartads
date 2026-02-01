@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
+use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\CronQueueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
         }
 
         return response()->json(['ok' => true]);
+    });
+
+    // Mail API routes
+    Route::prefix('mail')->group(function () {
+        Route::post('/send', [MailController::class, 'send']);
+        Route::post('/send-raw', [MailController::class, 'sendRaw']);
     });
 
     Route::get('/me', function (Request $request) {

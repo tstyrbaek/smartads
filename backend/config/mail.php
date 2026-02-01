@@ -115,4 +115,28 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mail Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for our custom mail service abstraction layer.
+    | This allows us to switch between different mail providers (local SMTP,
+    | MailJet, SES, etc.) while maintaining the same interface.
+    |
+    */
+
+    'default_service' => env('MAIL_SERVICE', 'local'),
+
+    'services' => [
+        'local' => [
+            'driver' => 'smtp',
+        ],
+        'mailjet' => [
+            'api_key' => env('MAILJET_API_KEY'),
+            'secret_key' => env('MAILJET_SECRET_KEY'),
+            'version' => 'v3.1',
+        ],
+    ],
+
 ];
