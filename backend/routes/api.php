@@ -17,6 +17,8 @@ Route::get('/cron/queue', [CronQueueController::class, 'run']);
 Route::post('/webhooks/gemini', [GeminiWebhookController::class, 'handle']);
 
 Route::post('/auth/forgot-password', function (Request $request) {
+    Log::info('Forgot password request received', ['email' => $request->email]);
+    
     $validated = $request->validate([
         'email' => ['required', 'email'],
     ]);
@@ -24,6 +26,8 @@ Route::post('/auth/forgot-password', function (Request $request) {
     $user = User::where('email', $validated['email'])->first();
     
     if ($user) {
+        Log::info('User found, sending reset email', ['user_id' => $user->id, 'email' => $user->email]);
+        
         // Generate password reset token
         $token = \Illuminate\Support\Str::random(60);
         $user->password_reset_token = $token;
@@ -35,21 +39,30 @@ Route::post('/auth/forgot-password', function (Request $request) {
             $mailService = app(\App\Services\Mail\MailServiceInterface::class);
             $resetLink = url("/reset-password?token={$token}&email=" . urlencode($user->email));
             
+            Log::info('Mail service resolved', ['service' => get_class($mailService)]);
+            
             $htmlContent = view('emails.password_reset', [
                 'name' => $user->name,
                 'reset_link' => $resetLink
             ])->render();
             
-            $mailService->sendRaw(
+            $result = $mailService->sendRaw(
                 [$user->email],
                 'Nulstil din adgangskode - SmartAds',
                 $htmlContent,
                 null
             );
+            
+            Log::info('Password reset email sent', ['result' => $result]);
         } catch (\Exception $e) {
             // Log error but don't reveal to user
-            Log::error('Failed to send password reset email: ' . $e->getMessage());
+            Log::error('Failed to send password reset email: ' . $e->getMessage(), [
+                'email' => $user->email,
+                'exception' => $e
+            ]);
         }
+    } else {
+        Log::info('User not found', ['email' => $validated['email']]);
     }
 
     // Always return success to prevent email enumeration
