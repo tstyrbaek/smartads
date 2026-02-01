@@ -101,6 +101,19 @@ export async function login(email: string, password: string, deviceName?: string
   return json
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
+}
+
 export async function getMe(): Promise<MeResponse> {
   const res = await apiFetch('/api/me')
   return (await res.json()) as MeResponse

@@ -8,12 +8,84 @@ use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\CronQueueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
 Route::get('/cron/queue', [CronQueueController::class, 'run']);
 
 Route::post('/webhooks/gemini', [GeminiWebhookController::class, 'handle']);
+
+Route::post('/auth/forgot-password', function (Request $request) {
+    $validated = $request->validate([
+        'email' => ['required', 'email'],
+    ]);
+
+    $user = User::where('email', $validated['email'])->first();
+    
+    if ($user) {
+        // Generate password reset token
+        $token = \Illuminate\Support\Str::random(60);
+        $user->password_reset_token = $token;
+        $user->password_reset_expires_at = now()->addHours(1);
+        $user->save();
+
+        // Send reset email using mail service
+        try {
+            $mailService = app(\App\Services\Mail\MailServiceInterface::class);
+            $resetLink = url("/reset-password?token={$token}&email=" . urlencode($user->email));
+            
+            $htmlContent = view('emails.password_reset', [
+                'name' => $user->name,
+                'reset_link' => $resetLink
+            ])->render();
+            
+            $mailService->sendRaw(
+                [$user->email],
+                'Nulstil din adgangskode - SmartAds',
+                $htmlContent,
+                null
+            );
+        } catch (\Exception $e) {
+            // Log error but don't reveal to user
+            Log::error('Failed to send password reset email: ' . $e->getMessage());
+        }
+    }
+
+    // Always return success to prevent email enumeration
+    return response()->json([
+        'message' => 'Hvis emailen findes i vores system, vil du modtage et reset link.'
+    ]);
+});
+
+Route::post('/auth/reset-password', function (Request $request) {
+    $validated = $request->validate([
+        'token' => ['required', 'string'],
+        'email' => ['required', 'email'],
+        'password' => ['required', 'string', 'min:8', 'confirmed'],
+    ]);
+
+    $user = User::where('email', $validated['email'])
+        ->where('password_reset_token', $validated['token'])
+        ->where('password_reset_expires_at', '>', now())
+        ->first();
+
+    if (!$user) {
+        return response()->json([
+            'error' => 'Ugyldigt eller udløbet reset link.'
+        ], 400);
+    }
+
+    // Update password and clear reset token
+    $user->password = Hash::make($validated['password']);
+    $user->password_reset_token = null;
+    $user->password_reset_expires_at = null;
+    $user->save();
+
+    return response()->json([
+        'message' => 'Adgangskoden er blevet nulstillet.'
+    ]);
+});
 
 Route::post('/auth/login', function (Request $request) {
     $validated = $request->validate([

@@ -6,6 +6,7 @@ import AdPage from './pages/AdPage.vue'
 import AdsPage from './pages/AdsPage.vue'
 import CreateAdPage from './pages/CreateAdPage.vue'
 import LoginPage from './pages/LoginPage.vue'
+import ResetPasswordPage from './pages/ResetPasswordPage.vue'
 import SelectCompanyPage from './pages/SelectCompanyPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import { authToken } from './lib/api'
@@ -15,6 +16,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', component: LoginPage },
+    { path: '/reset-password', component: ResetPasswordPage },
     { path: '/select-company', component: SelectCompanyPage },
     { path: '/profile', component: ProfilePage },
     { path: '/', redirect: '/ads' },
@@ -27,7 +29,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const isPublic = to.path === '/login'
+  const isPublic = to.path === '/login' || to.path === '/reset-password'
   const hasToken = Boolean(authToken.value)
 
   if (!isPublic && !hasToken) {
