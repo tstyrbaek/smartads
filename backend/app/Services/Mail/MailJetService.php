@@ -19,9 +19,10 @@ class MailJetService extends AbstractMailService
      * @param string $subject Email subject
      * @param string $html HTML content
      * @param string|null $text Plain text content (optional)
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    protected function sendRawViaService(array $to, string $subject, string $html, ?string $text): array
+    protected function sendRawViaService(array $to, string $subject, string $html, ?string $text, array $attachments = []): array
     {
         try {
             $recipients = array_map(fn($email) => ['Email' => $email], $to);
@@ -31,7 +32,7 @@ class MailJetService extends AbstractMailService
                     [
                         'From' => [
                             'Email' => config('mail.from.address'),
-                            'Name' => config('mail.from.name', 'AutistStøtteAssistent')
+                            'Name' => config('mail.from.name', 'SmartAds')
                         ],
                         'To' => $recipients,
                         'Subject' => $subject,
@@ -42,6 +43,28 @@ class MailJetService extends AbstractMailService
 
             if ($text) {
                 $payload['Messages'][0]['TextPart'] = $text;
+            }
+
+            // Add attachments
+            if (!empty($attachments)) {
+                $attachmentData = [];
+                foreach ($attachments as $attachment) {
+                    if (file_exists($attachment)) {
+                        $filename = basename($attachment);
+                        $content = base64_encode(file_get_contents($attachment));
+                        $mimeType = mime_content_type($attachment) ?? 'application/octet-stream';
+                        
+                        $attachmentData[] = [
+                            'ContentType' => $mimeType,
+                            'Filename' => $filename,
+                            'Base64Content' => $content
+                        ];
+                    }
+                }
+                
+                if (!empty($attachmentData)) {
+                    $payload['Messages'][0]['Attachments'] = $attachmentData;
+                }
             }
 
             $response = Http::withBasicAuth($this->apiKey, $this->secretKey)
@@ -56,6 +79,7 @@ class MailJetService extends AbstractMailService
                     'to' => $to,
                     'subject' => $subject,
                     'message_id' => $data['Messages'][0]['MessageID'] ?? null,
+                    'attachments' => count($attachments),
                     'response' => $data
                 ];
             } else {

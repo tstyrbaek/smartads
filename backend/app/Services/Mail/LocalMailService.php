@@ -14,16 +14,18 @@ class LocalMailService extends AbstractMailService
      * @param string $subject Email subject
      * @param string $html HTML content
      * @param string|null $text Plain text content (optional)
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    protected function sendRawViaService(array $to, string $subject, string $html, ?string $text): array
+    protected function sendRawViaService(array $to, string $subject, string $html, ?string $text, array $attachments = []): array
     {
         try {
-            $mailable = new class($subject, $html, $text) extends Mailable {
+            $mailable = new class($subject, $html, $text, $attachments) extends Mailable {
                 public function __construct(
                     private string $mailSubject,
                     private string $mailHtml,
-                    private ?string $mailText
+                    private ?string $mailText,
+                    private array $mailAttachments
                 ) {}
 
                 public function build()
@@ -34,6 +36,17 @@ class LocalMailService extends AbstractMailService
                     if ($this->mailText) {
                         $this->text($this->mailText);
                     }
+
+                    // Add attachments
+                    foreach ($this->mailAttachments as $attachment) {
+                        if (file_exists($attachment)) {
+                            $filename = basename($attachment);
+                            $this->attach($attachment, [
+                                'as' => $filename,
+                                'mime' => mime_content_type($attachment) ?? 'application/octet-stream'
+                            ]);
+                        }
+                    }
                 }
             };
 
@@ -43,7 +56,8 @@ class LocalMailService extends AbstractMailService
                 'status' => 'sent',
                 'service' => 'local',
                 'to' => $to,
-                'subject' => $subject
+                'subject' => $subject,
+                'attachments' => count($attachments)
             ];
         } catch (\Exception $e) {
             return [

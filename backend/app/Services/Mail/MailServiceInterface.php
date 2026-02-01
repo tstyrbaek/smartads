@@ -10,9 +10,10 @@ interface MailServiceInterface
      * @param array $to Array of email addresses
      * @param string $template Blade template name (without .blade.php)
      * @param array $variables Variables to pass to the template
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    public function sendTemplate(array $to, string $template, array $variables = []): array;
+    public function sendTemplate(array $to, string $template, array $variables = [], array $attachments = []): array;
 
     /**
      * Send raw HTML email

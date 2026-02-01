@@ -14,15 +14,16 @@ abstract class AbstractMailService implements MailServiceInterface
      * @param array $to Array of email addresses
      * @param string $template Blade template name (without .blade.php)
      * @param array $variables Variables to pass to the template
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    public function sendTemplate(array $to, string $template, array $variables = []): array
+    public function sendTemplate(array $to, string $template, array $variables = [], array $attachments = []): array
     {
         $html = View::make("emails.{$template}", $variables)->render();
         $subject = $variables['subject'] ?? 'No subject';
         $text = $variables['text'] ?? null;
 
-        return $this->sendRawViaService($to, $subject, $html, $text);
+        return $this->sendRawViaService($to, $subject, $html, $text, $attachments);
     }
 
     /**
@@ -32,11 +33,12 @@ abstract class AbstractMailService implements MailServiceInterface
      * @param string $subject Email subject
      * @param string $html HTML content
      * @param string|null $text Plain text content (optional)
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    public function sendRaw(array $to, string $subject, string $html, string $text = null): array
+    public function sendRaw(array $to, string $subject, string $html, string $text = null, array $attachments = []): array
     {
-        return $this->sendRawViaService($to, $subject, $html, $text);
+        return $this->sendRawViaService($to, $subject, $html, $text, $attachments);
     }
 
     /**
@@ -46,7 +48,8 @@ abstract class AbstractMailService implements MailServiceInterface
      * @param string $subject Email subject
      * @param string $html HTML content
      * @param string|null $text Plain text content (optional)
+     * @param array $attachments Array of file paths to attach
      * @return array Result from the mail service
      */
-    abstract protected function sendRawViaService(array $to, string $subject, string $html, ?string $text): array;
+    abstract protected function sendRawViaService(array $to, string $subject, string $html, ?string $text, array $attachments = []): array;
 }
