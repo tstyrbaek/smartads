@@ -21,7 +21,7 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
                                     <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -31,10 +31,26 @@
                                         <td class="px-3 py-2 text-sm text-gray-900">{{ $company->id }}</td>
                                         <td class="px-3 py-2 text-sm text-gray-900">{{ $company->name }}</td>
                                         <td class="px-3 py-2 text-sm text-gray-900">
-                                            @if ($company->brand?->logo_path)
-                                                <a class="text-indigo-600 hover:text-indigo-900" href="{{ asset('storage/' . $company->brand->logo_path) }}" target="_blank">View</a>
+                                            @php
+                                                $subscription = $company->subscription;
+                                            @endphp
+
+                                            @if($subscription)
+                                                <div class="font-medium">{{ $subscription->plan?->name ?? '-' }}</div>
+                                                <div class="mt-1">
+                                                    @if(!$subscription->is_active)
+                                                        <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">Inaktiv</span>
+                                                    @elseif($subscription->isExpired())
+                                                        <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Udløbet</span>
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Aktiv</span>
+                                                    @endif
+                                                </div>
                                             @else
-                                                <span class="text-gray-500">-</span>
+                                                <div class="font-medium text-gray-500">-</div>
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">Ingen</span>
+                                                </div>
                                             @endif
                                         </td>
                                         <td class="px-3 py-2 text-sm text-gray-900 text-right">

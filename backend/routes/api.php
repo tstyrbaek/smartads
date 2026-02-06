@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
 use App\Http\Controllers\Api\MailController;
+use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\CronQueueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -226,5 +227,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ads/{id}/image', [AdController::class, 'image']);
         Route::get('/ads/{id}/download', [AdController::class, 'download']);
         Route::delete('/ads/{id}', [AdController::class, 'destroy']);
+
+        // Subscription routes
+        Route::get('/subscription', [SubscriptionController::class, 'index']);
+        Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
+        Route::get('/subscription/usage', [SubscriptionController::class, 'usage']);
+        Route::get('/tokens/summary', [SubscriptionController::class, 'tokensSummary']);
+        Route::post('/subscription/check-tokens', [SubscriptionController::class, 'checkTokens']);
+        
+        Route::post('/subscription/subscribe', [SubscriptionController::class, 'subscribe']);
+        Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     });
 });

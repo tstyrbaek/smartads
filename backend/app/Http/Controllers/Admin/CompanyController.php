@@ -16,7 +16,10 @@ class CompanyController extends Controller
     public function index(): View
     {
         return view('admin.companies.index', [
-            'companies' => Company::query()->with('brand')->orderBy('id', 'desc')->paginate(50),
+            'companies' => Company::query()
+                ->with(['subscription.plan'])
+                ->orderBy('id', 'desc')
+                ->paginate(50),
         ]);
     }
 
@@ -32,6 +35,8 @@ class CompanyController extends Controller
             'website_url' => ['nullable', 'url', 'max:2048'],
             'company_description' => ['nullable', 'string'],
             'target_audience_description' => ['nullable', 'string'],
+            'member_user_ids' => ['nullable', 'array'],
+            'member_user_ids.*' => ['integer', 'exists:users,id'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'brand_color_1' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'brand_color_2' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -61,13 +66,17 @@ class CompanyController extends Controller
             'color_4' => $validated['brand_color_4'] ?? null,
         ]);
 
+        $adminUserIds = User::query()->where('role', 'admin')->pluck('id')->all();
+        $memberUserIds = array_values(array_unique(array_merge($validated['member_user_ids'] ?? [], $adminUserIds)));
+        $company->users()->sync($memberUserIds);
+
         return redirect()->route('admin.companies.index');
     }
 
     public function edit(Company $company): View
     {
         return view('admin.companies.edit', [
-            'company' => $company->loadMissing('brand', 'users'),
+            'company' => $company->loadMissing('brand', 'users', 'subscription.plan', 'subscriptions.plan'),
             'users' => User::query()->orderBy('name')->get(),
         ]);
     }
@@ -115,7 +124,9 @@ class CompanyController extends Controller
             'color_4' => $validated['brand_color_4'] ?? null,
         ])->save();
 
-        $company->users()->sync($validated['member_user_ids'] ?? []);
+        $adminUserIds = User::query()->where('role', 'admin')->pluck('id')->all();
+        $memberUserIds = array_values(array_unique(array_merge($validated['member_user_ids'] ?? [], $adminUserIds)));
+        $company->users()->sync($memberUserIds);
 
         if ($request->hasFile('logo')) {
             if ($brand->logo_path) {

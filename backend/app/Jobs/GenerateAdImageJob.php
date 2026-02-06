@@ -6,6 +6,8 @@ use App\Events\AdUpdated;
 use App\Models\Ad;
 use App\Models\Company;
 use App\Services\Gemini\GeminiClient;
+use App\Services\SubscriptionService;
+use App\Services\TokenUsageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -43,6 +45,28 @@ class GenerateAdImageJob implements ShouldQueue
             $ad->forceFill([
                 'status' => 'failed',
                 'error' => 'company_not_found',
+            ])->save();
+            return;
+        }
+
+        // Check subscription and tokens before processing
+        $subscriptionService = app(SubscriptionService::class);
+        $tokenService = app(TokenUsageService::class);
+        
+        if (!$company->hasActiveSubscription()) {
+            $ad->forceFill([
+                'status' => 'failed',
+                'error' => 'no_active_subscription',
+            ])->save();
+            return;
+        }
+
+        // Estimate tokens needed (rough estimate based on prompt length)
+        $estimatedTokens = $this->estimateTokensNeeded($ad);
+        if (!$tokenService->canGenerateAd($company, $estimatedTokens)) {
+            $ad->forceFill([
+                'status' => 'failed',
+                'error' => 'insufficient_tokens',
             ])->save();
             return;
         }
@@ -232,6 +256,9 @@ class GenerateAdImageJob implements ShouldQueue
                 'debug' => $debug,
             ])->save();
 
+            // Record token usage
+            $tokenService->recordTokenUsage($ad);
+
             event(new AdUpdated(
                 (int) $company->id,
                 (string) $ad->id,
@@ -262,5 +289,15 @@ class GenerateAdImageJob implements ShouldQueue
         } finally {
             Storage::disk('local')->deleteDirectory('tmp/ad-input/' . $ad->id);
         }
+    }
+
+    private function estimateTokensNeeded(Ad $ad): int
+    {
+        // Rough estimation based on text length and complexity
+        $baseTokens = 1000;
+        $textTokens = strlen($ad->text ?? '') * 2;
+        $instructionTokens = strlen($ad->instructions ?? '') * 1;
+        
+        return $baseTokens + $textTokens + $instructionTokens;
     }
 }

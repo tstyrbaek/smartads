@@ -35,7 +35,7 @@ class CompanyController extends Controller
             abort(403);
         }
 
-        $company = Company::query()->with('brand')->find($activeCompanyId);
+        $company = Company::query()->with('brand', 'subscription.plan')->find($activeCompanyId);
         if (!$company) {
             abort(404);
         }

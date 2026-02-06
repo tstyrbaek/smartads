@@ -28,6 +28,14 @@
                         <x-nav-link :href="route('admin.ads.index')" :active="request()->routeIs('admin.ads.*')">
                             Ads
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.subscription-plans.index')" :active="request()->routeIs('admin.subscription-plans.*')">
+                            Subscription Plans
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')">
+                            Subscriptions
+                        </x-nav-link>
                     @elseif (Auth::user()?->isBusiness())
                         <x-nav-link :href="route('company.edit')" :active="request()->routeIs('company.*')">
                             Company
@@ -94,6 +102,38 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            @if (Auth::user()?->isAdmin())
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    Users
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.companies.index')" :active="request()->routeIs('admin.companies.*')">
+                    Companies
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.ads.index')" :active="request()->routeIs('admin.ads.*')">
+                    Ads
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.subscription-plans.index')" :active="request()->routeIs('admin.subscription-plans.*')">
+                    Subscription Plans
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')">
+                    Subscriptions
+                </x-responsive-nav-link>
+            @elseif (Auth::user()?->isBusiness())
+                <x-responsive-nav-link :href="route('company.edit')" :active="request()->routeIs('company.*')">
+                    Company
+                </x-responsive-nav-link>
+
+                @if (Auth::user()->companies()->count() > 1)
+                    <x-responsive-nav-link :href="route('company.select')" :active="request()->routeIs('company.select*')">
+                        Switch company
+                    </x-responsive-nav-link>
+                @endif
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

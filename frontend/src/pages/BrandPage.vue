@@ -51,11 +51,28 @@
         </div>
       </div>
 
-      <div class="grid gap-6 rounded-lg border bg-white p-4">
-        <div>
-          <h2 class="text-lg font-semibold">Branding</h2>
-          <p class="mt-1 text-sm text-gray-600">Definér farver, logo og øvrige branding-elementer.</p>
-        </div>
+      <details class="group grid gap-6 rounded-lg border bg-white p-4" open>
+        <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">Branding</h2>
+              <p class="mt-1 text-sm text-gray-600">Definér farver, logo og øvrige branding-elementer.</p>
+            </div>
+
+            <svg
+              class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        </summary>
 
         <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
           <div>
@@ -118,7 +135,114 @@
           />
           <p class="text-xs text-gray-600">Her kan du beskrive specifikke ønsker til det visuelle udtryk. F.eks. 'Brug altid en lys baggrund' eller 'Placer logoet i øverste højre hjørne'.</p>
         </div>
-      </div>
+      </details>
+
+      <details class="group grid gap-6 rounded-lg border bg-white p-4">
+        <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">Abonnement</h2>
+              <p class="mt-1 text-sm text-gray-600">Overblik over din nuværende pakke og dit token-forbrug denne måned.</p>
+            </div>
+
+            <svg
+              class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        </summary>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
+            <div>
+              <legend class="text-sm font-semibold text-gray-900">Subscription</legend>
+            </div>
+
+            <div v-if="subscriptionStatus" class="grid gap-2 text-sm">
+              <div>
+                <div class="text-xs text-gray-600">Pakke</div>
+                <div class="font-semibold">{{ subscriptionStatus.plan?.name ?? '-' }}</div>
+              </div>
+
+              <div>
+                <div class="text-xs text-gray-600">Status</div>
+                <div class="mt-1">
+                  <span
+                    v-if="subscriptionStatus.status === 'active'"
+                    class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
+                  >Aktiv</span>
+                  <span
+                    v-else-if="subscriptionStatus.status === 'expired'"
+                    class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20"
+                  >Udløbet</span>
+                  <span
+                    v-else
+                    class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20"
+                  >Ingen</span>
+                </div>
+              </div>
+
+              <div v-if="subscriptionStatus.status !== 'none'">
+                <div class="text-xs text-gray-600">Token limit pr. måned</div>
+                <div class="font-semibold">{{ subscriptionStatus.tokens_limit.toLocaleString('da-DK') }}</div>
+              </div>
+            </div>
+
+            <div v-else class="text-sm text-gray-600">Indlæser...</div>
+          </fieldset>
+
+          <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
+            <div>
+              <legend class="text-sm font-semibold text-gray-900">Tokens (denne måned)</legend>
+            </div>
+
+            <div v-if="tokensSummary" class="grid gap-3 text-sm">
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <div class="text-xs text-gray-600">Brugt</div>
+                  <div class="font-semibold">{{ tokensSummary.used.toLocaleString('da-DK') }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-gray-600">Limit</div>
+                  <div class="font-semibold">{{ tokensSummary.limit.toLocaleString('da-DK') }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-gray-600">Tilbage</div>
+                  <div class="font-semibold">{{ tokensSummary.remaining.toLocaleString('da-DK') }}</div>
+                </div>
+              </div>
+
+              <div class="grid gap-2">
+                <div class="flex items-center justify-between text-xs text-gray-600">
+                  <div>{{ Math.round(tokensSummary.usage_percentage) }}%</div>
+                  <div>{{ tokensSummary.period }}</div>
+                </div>
+                <div class="h-2 w-full rounded bg-gray-200">
+                  <div
+                    class="h-2 rounded"
+                    :class="tokensSummary.usage_percentage > 80 ? 'bg-red-600' : tokensSummary.usage_percentage > 60 ? 'bg-yellow-500' : 'bg-green-600'"
+                    :style="{ width: `${Math.min(100, Math.max(0, tokensSummary.usage_percentage))}%` }"
+                  />
+                </div>
+              </div>
+
+              <div v-if="tokensSummary.status === 'none'" class="rounded bg-yellow-50 p-3 text-sm text-yellow-900">
+                Ingen aktivt abonnement fundet
+              </div>
+            </div>
+
+            <div v-else class="text-sm text-gray-600">Indlæser...</div>
+          </fieldset>
+        </div>
+      </details>
 
       <div class="flex items-center gap-3">
         <button
@@ -160,7 +284,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { getBrand, saveBrand, toAbsoluteBackendUrl } from '../lib/api'
+import { getBrand, getSubscription, getTokensSummary, saveBrand, toAbsoluteBackendUrl } from '../lib/api'
 
 const state = ref({
   companyName: '',
@@ -181,6 +305,9 @@ const logoUrl = ref<string | null>(null)
 const saving = ref(false)
 const message = ref<string | null>(null)
 
+const subscriptionStatus = ref<Awaited<ReturnType<typeof getSubscription>>['subscription'] | null>(null)
+const tokensSummary = ref<Awaited<ReturnType<typeof getTokensSummary>> | null>(null)
+
 function onFile(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0] ?? null
@@ -188,7 +315,11 @@ function onFile(e: Event) {
 }
 
 async function load() {
-  const brand = await getBrand()
+  const [brand, subscriptionResponse, tokensSummaryResponse] = await Promise.all([
+    getBrand(),
+    getSubscription(),
+    getTokensSummary(),
+  ])
   state.value.companyName = brand.companyName ?? ''
   state.value.websiteUrl = brand.websiteUrl ?? ''
   state.value.companyDescription = brand.companyDescription ?? ''
@@ -201,6 +332,9 @@ async function load() {
   state.value.slogan = brand.slogan ?? ''
   state.value.visual_guidelines = brand.visual_guidelines ?? ''
   logoUrl.value = brand.logoPath ? toAbsoluteBackendUrl(brand.logoPath) : null
+
+  subscriptionStatus.value = subscriptionResponse.subscription
+  tokensSummary.value = tokensSummaryResponse
 }
 
 async function onSubmit() {

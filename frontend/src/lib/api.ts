@@ -14,6 +14,38 @@ export type Brand = {
   updatedAt?: string
 }
 
+export type SubscriptionStatus = {
+  status: 'none' | 'active' | 'expired'
+  plan: {
+    id: number
+    name: string
+    description?: string | null
+    max_tokens_per_month: number
+    formatted_tokens?: string
+    price_per_month: number
+    formatted_price?: string
+    features?: string[]
+  } | null
+  remaining_days: number | null
+  tokens_remaining: number
+  tokens_limit: number
+  usage_percentage?: number
+}
+
+export type SubscriptionResponse = {
+  subscription: SubscriptionStatus
+  usage_history?: { period: string; tokens: number; cost: number }[]
+}
+
+export type TokensSummaryResponse = {
+  status: 'none' | 'active'
+  period: string
+  limit: number
+  used: number
+  remaining: number
+  usage_percentage: number
+}
+
 export type MeResponse = {
   user: { id: number; name: string; email: string }
   companies: { id: number; name: string; logo_path: string | null }[]
@@ -164,6 +196,16 @@ export function clearActiveCompanyId() {
 export async function getBrand(): Promise<Brand> {
   const res = await apiFetch('/api/brand')
   return (await res.json()) as Brand
+}
+
+export async function getSubscription(): Promise<SubscriptionResponse> {
+  const res = await apiFetch('/api/subscription')
+  return (await res.json()) as SubscriptionResponse
+}
+
+export async function getTokensSummary(): Promise<TokensSummaryResponse> {
+  const res = await apiFetch('/api/tokens/summary')
+  return (await res.json()) as TokensSummaryResponse
 }
 
 export async function saveBrand(form: FormData): Promise<Brand> {

@@ -7,6 +7,14 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            @if(session('success'))
+                <div class="mb-6 rounded-md bg-green-50 p-4 text-sm text-green-800">{{ session('success') }}</div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-800">{{ session('error') }}</div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <form method="POST" action="{{ route('admin.companies.update', $company) }}" enctype="multipart/form-data" class="space-y-6">
@@ -50,10 +58,12 @@
                             <select id="member_user_ids" name="member_user_ids[]" multiple class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="10">
                                 @php
                                     $selectedUserIds = collect(old('member_user_ids', $company->users->pluck('id')->all()))->map(fn ($id) => (int) $id)->all();
+                                    $adminUserIds = $users->where('role', 'admin')->pluck('id')->map(fn ($id) => (int) $id)->all();
+                                    $selectedUserIds = array_values(array_unique(array_merge($selectedUserIds, $adminUserIds)));
                                 @endphp
                                 @foreach ($users as $user)
-                                    <option value="{{ $user->id }}" @selected(in_array($user->id, $selectedUserIds, true))>
-                                        {{ $user->name }} ({{ $user->email }})
+                                    <option value="{{ $user->id }}" @selected(in_array($user->id, $selectedUserIds, true)) @disabled($user->role === 'admin')>
+                                        {{ $user->name }} ({{ $user->email }})@if($user->role === 'admin') (Admin)@endif
                                     </option>
                                 @endforeach
                             </select>
@@ -63,6 +73,89 @@
                             @error('member_user_ids.*')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="font-medium text-gray-900">Subscriptions</div>
+                                    <div class="mt-1 text-sm text-gray-500">
+                                        @php
+                                            $currentSubscription = $company->getCurrentSubscription();
+                                        @endphp
+                                        @if ($currentSubscription)
+                                            Aktuel: {{ $currentSubscription->plan->name }}
+                                            @if($currentSubscription->ends_at)
+                                                (til {{ $currentSubscription->ends_at->format('d/m/Y') }})
+                                            @else
+                                                (ubegrænset)
+                                            @endif
+                                        @else
+                                            Ingen aktivt abonnement
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @php
+                                    $returnTo = route('admin.companies.edit', $company);
+                                @endphp
+
+                                @if($company->subscriptions->isEmpty())
+                                    <a href="{{ route('admin.companies.subscriptions.create', $company) }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Opret abonnement</a>
+                                @endif
+                            </div>
+
+                            <div class="mt-4 overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pakke</th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto-renew</th>
+                                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        @forelse($company->subscriptions->sortByDesc('starts_at') as $subscription)
+                                            <tr>
+                                                <td class="px-3 py-2 text-sm text-gray-900">
+                                                    <div class="font-medium">{{ $subscription->plan->name }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $subscription->plan->formatted_price }}</div>
+                                                </td>
+                                                <td class="px-3 py-2 text-sm text-gray-900">
+                                                    {{ $subscription->starts_at->format('d/m/Y') }}
+                                                    @if($subscription->ends_at)
+                                                        - {{ $subscription->ends_at->format('d/m/Y') }}
+                                                    @else
+                                                        - Ubegrænset
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-sm text-gray-900">
+                                                    @if($subscription->is_active)
+                                                        @if($subscription->isExpired())
+                                                            <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Udløbet</span>
+                                                        @else
+                                                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Aktiv</span>
+                                                        @endif
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">Inaktiv</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-sm text-gray-900">{{ $subscription->auto_renew ? 'Ja' : 'Nej' }}</td>
+                                                <td class="px-3 py-2 text-sm text-gray-900 text-right space-x-2">
+                                                    <a href="{{ route('admin.subscriptions.show', $subscription) . '?return_to=' . urlencode($returnTo) }}" class="inline-flex items-center px-3 py-1 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">View</a>
+                                                    <a href="{{ route('admin.subscriptions.edit', $subscription) . '?return_to=' . urlencode($returnTo) }}" class="inline-flex items-center px-3 py-1 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Edit</a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="px-3 py-4 text-sm text-gray-500">Ingen abonnementer</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <details class="border border-gray-200 rounded-md p-4">

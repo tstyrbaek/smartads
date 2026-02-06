@@ -45,6 +45,61 @@
                             @enderror
                         </div>
 
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <div class="font-medium text-gray-900">Subscription</div>
+
+                            @php
+                                $currentSubscription = $company->getCurrentSubscription();
+                            @endphp
+
+                            @if ($currentSubscription)
+                                <dl class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <dt class="text-xs text-gray-500">Pakke</dt>
+                                        <dd class="mt-1 text-gray-900 font-medium">{{ $currentSubscription->plan->name }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-xs text-gray-500">Status</dt>
+                                        <dd class="mt-1">
+                                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Aktiv</span>
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-xs text-gray-500">Periode</dt>
+                                        <dd class="mt-1 text-gray-900">
+                                            {{ $currentSubscription->starts_at->format('d/m/Y') }}
+                                            @if($currentSubscription->ends_at)
+                                                - {{ $currentSubscription->ends_at->format('d/m/Y') }}
+                                            @else
+                                                - Ubegrænset
+                                            @endif
+                                        </dd>
+                                    </div>
+                                </dl>
+                            @else
+                                @php
+                                    $subscription = $company->subscription;
+                                @endphp
+
+                                @if ($subscription)
+                                    <div class="mt-4 text-sm">
+                                        <div class="font-medium">{{ $subscription->plan?->name ?? '-' }}</div>
+                                        <div class="mt-2">
+                                            @if(!$subscription->is_active)
+                                                <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">Inaktiv</span>
+                                            @elseif($subscription->isExpired())
+                                                <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Udløbet</span>
+                                            @else
+                                                <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Aktiv</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="mt-4 rounded-md bg-yellow-50 p-4 text-sm text-yellow-900">Ingen aktivt abonnement fundet</div>
+                                @endif
+                            @endif
+                        </div>
+
                         <details class="border border-gray-200 rounded-md p-4">
                             <summary class="cursor-pointer font-medium text-gray-900">Brand information</summary>
 
