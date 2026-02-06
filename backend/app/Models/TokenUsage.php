@@ -10,6 +10,8 @@ class TokenUsage extends Model
 {
     use HasFactory;
 
+    protected $table = 'token_usage';
+
     protected $fillable = [
         'ad_id',
         'company_id',
