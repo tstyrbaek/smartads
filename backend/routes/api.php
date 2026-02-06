@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
 use App\Http\Controllers\Api\MailController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\CronQueueController;
 use Illuminate\Http\Request;
@@ -234,6 +235,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscription/usage', [SubscriptionController::class, 'usage']);
         Route::get('/tokens/summary', [SubscriptionController::class, 'tokensSummary']);
         Route::post('/subscription/check-tokens', [SubscriptionController::class, 'checkTokens']);
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
         
         Route::post('/subscription/subscribe', [SubscriptionController::class, 'subscribe']);
         Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);

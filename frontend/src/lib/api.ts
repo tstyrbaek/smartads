@@ -46,6 +46,20 @@ export type TokensSummaryResponse = {
   usage_percentage: number
 }
 
+export type NotificationItem = {
+  id: number
+  level: 'info' | 'warning' | 'error' | 'success'
+  title: string
+  message: string
+  data?: any
+  starts_at?: string | null
+  ends_at?: string | null
+}
+
+export type NotificationsResponse = {
+  notifications: NotificationItem[]
+}
+
 export type MeResponse = {
   user: { id: number; name: string; email: string }
   companies: { id: number; name: string; logo_path: string | null }[]
@@ -206,6 +220,11 @@ export async function getSubscription(): Promise<SubscriptionResponse> {
 export async function getTokensSummary(): Promise<TokensSummaryResponse> {
   const res = await apiFetch('/api/tokens/summary')
   return (await res.json()) as TokensSummaryResponse
+}
+
+export async function getNotifications(limit = 10): Promise<NotificationsResponse> {
+  const res = await apiFetch(`/api/notifications?limit=${encodeURIComponent(String(limit))}`)
+  return (await res.json()) as NotificationsResponse
 }
 
 export const tokensSummary = ref<TokensSummaryResponse | null>(null)

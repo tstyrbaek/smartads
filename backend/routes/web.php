@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Admin\CompanySubscriptionController as AdminCompanySubscriptionController;
+use App\Http\Controllers\Admin\NotificationCampaignController as AdminNotificationCampaignController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanySelectionController;
 use App\Http\Controllers\CronQueueController;
@@ -86,6 +87,14 @@ Route::prefix('admin')->group(function () {
         Route::patch('/subscriptions/{subscription}', [AdminSubscriptionController::class, 'update'])->name('subscriptions.update');
         Route::delete('/subscriptions/{subscription}', [AdminSubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
         Route::post('/subscriptions/{subscription}/renew', [AdminSubscriptionController::class, 'renew'])->name('subscriptions.renew');
+
+        // Notifications
+        Route::get('/notifications', [AdminNotificationCampaignController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/create', [AdminNotificationCampaignController::class, 'create'])->name('notifications.create');
+        Route::post('/notifications', [AdminNotificationCampaignController::class, 'store'])->name('notifications.store');
+        Route::get('/notifications/{campaign}/edit', [AdminNotificationCampaignController::class, 'edit'])->name('notifications.edit');
+        Route::patch('/notifications/{campaign}', [AdminNotificationCampaignController::class, 'update'])->name('notifications.update');
+        Route::delete('/notifications/{campaign}', [AdminNotificationCampaignController::class, 'destroy'])->name('notifications.destroy');
 
         Route::get('/brands', fn () => redirect()->route('admin.companies.index'))->name('brands.index');
         Route::get('/brands/create', fn () => redirect()->route('admin.companies.create'))->name('brands.create');

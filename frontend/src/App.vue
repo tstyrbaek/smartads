@@ -113,38 +113,8 @@
     </header>
 
     <main class="mx-auto max-w-4xl px-4 py-8 pt-20">
-      <div
-        v-if="isAuthenticated && showTokensBar"
-        class="mb-6 rounded-lg border bg-white p-4"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div class="text-sm font-medium">Tokens (denne måned)</div>
-          <div class="text-xs text-gray-600">{{ tokensSummaryValue?.period ?? '' }}</div>
-        </div>
-
-        <div v-if="tokensSummaryValue" class="mt-2 grid gap-3 text-sm">
-          <div class="grid grid-cols-3 gap-3">
-            <div>
-              <div class="text-xs text-gray-600">Brugt</div>
-              <div class="font-semibold">{{ tokensSummaryValue.used.toLocaleString('da-DK') }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-600">Limit</div>
-              <div class="font-semibold">{{ tokensSummaryValue.limit.toLocaleString('da-DK') }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-600">Tilbage</div>
-              <div class="font-semibold">{{ tokensSummaryValue.remaining.toLocaleString('da-DK') }}</div>
-            </div>
-          </div>
-
-          <div
-            v-if="!canCreateAd"
-            class="rounded bg-yellow-50 p-3 text-sm text-yellow-900"
-          >
-            Du har ikke nok tokens tilbage til at oprette en annonce. Der kræves mindst {{ minRequiredTokens.toLocaleString('da-DK') }} tokens.
-          </div>
-        </div>
+      <div v-if="isAuthenticated" class="mb-6">
+        <NoticeStack :items="globalNotices" />
       </div>
 
       <RouterView />
@@ -156,6 +126,9 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { activeCompanyId, authToken, getMe, logout, refreshTokensSummary, tokensSummary, type MeResponse } from './lib/api'
+import NoticeStack from './components/NoticeStack.vue'
+import { notices, removeNotice, replaceNoticesBySource, setNotice, type Notice } from './lib/notices'
+import { getNotifications, type NotificationsResponse } from './lib/api'
 
 const router = useRouter()
 const isAuthenticated = computed(() => Boolean(authToken.value))
@@ -196,15 +169,29 @@ watch(authToken, () => loadMe(), { immediate: true })
 const minRequiredTokens = 1000
 const tokensSummaryValue = computed(() => tokensSummary.value)
 
-const showTokensBar = computed(() => {
-  return Boolean(activeCompanyId.value)
-})
+const globalNotices = computed(() => notices.value)
 
-const canCreateAd = computed(() => {
-  if (!tokensSummaryValue.value) return true
-  if (tokensSummaryValue.value.status !== 'active') return false
-  return tokensSummaryValue.value.remaining >= minRequiredTokens
-})
+async function loadBackendNotices() {
+  if (!isAuthenticated.value || !activeCompanyId.value) {
+    replaceNoticesBySource('backend', [])
+    return
+  }
+
+  try {
+    const res: NotificationsResponse = await getNotifications(10)
+    const next: Notice[] = (res.notifications ?? []).map((n) => ({
+      id: `backend-${n.id}`,
+      source: 'backend' as const,
+      level: n.level,
+      title: n.title,
+      message: n.message,
+      meta: { data: n.data, starts_at: n.starts_at, ends_at: n.ends_at },
+    }))
+    replaceNoticesBySource('backend', next)
+  } catch {
+    replaceNoticesBySource('backend', [])
+  }
+}
 
 async function loadTokens() {
   if (!isAuthenticated.value) {
@@ -223,8 +210,46 @@ async function loadTokens() {
   }
 }
 
+function syncTokenNotice() {
+  const summary = tokensSummaryValue.value
+
+  if (!isAuthenticated.value || !activeCompanyId.value) {
+    removeNotice('tokens-insufficient')
+    return
+  }
+
+  if (!summary || summary.status !== 'active') {
+    setNotice({
+      id: 'tokens-insufficient',
+      source: 'system',
+      level: 'warning',
+      title: 'Tokens',
+      message: `Du har ikke nok tokens til at oprette en annonce. Der kræves mindst ${minRequiredTokens.toLocaleString('da-DK')} tokens.`,
+    })
+    return
+  }
+
+  if (summary.remaining < minRequiredTokens) {
+    setNotice({
+      id: 'tokens-insufficient',
+      source: 'system',
+      level: 'warning',
+      title: 'Tokens',
+      message: `Du har ikke nok tokens til at oprette en annonce. Der kræves mindst ${minRequiredTokens.toLocaleString('da-DK')} tokens.`,
+    })
+    return
+  }
+
+  removeNotice('tokens-insufficient')
+}
+
 watch([authToken, activeCompanyId], () => {
   loadTokens()
+  loadBackendNotices()
+})
+
+watch([tokensSummaryValue, authToken, activeCompanyId], () => {
+  syncTokenNotice()
 })
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -236,9 +261,33 @@ const handleClickOutside = (event: MouseEvent) => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   loadTokens()
+  syncTokenNotice()
+  loadBackendNotices()
+})
+
+let backendNoticeTimer: number | null = null
+
+watch([authToken, activeCompanyId], () => {
+  if (backendNoticeTimer) {
+    window.clearInterval(backendNoticeTimer)
+    backendNoticeTimer = null
+  }
+
+  if (!isAuthenticated.value || !activeCompanyId.value) {
+    return
+  }
+
+  backendNoticeTimer = window.setInterval(() => {
+    loadBackendNotices()
+  }, 60000)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+
+  if (backendNoticeTimer) {
+    window.clearInterval(backendNoticeTimer)
+    backendNoticeTimer = null
+  }
 })
 </script>

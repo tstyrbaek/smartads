@@ -36,6 +36,10 @@
                         <x-nav-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')">
                             Subscriptions
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.notifications.index')" :active="request()->routeIs('admin.notifications.*')">
+                            Notifications
+                        </x-nav-link>
                     @elseif (Auth::user()?->isBusiness())
                         <x-nav-link :href="route('company.edit')" :active="request()->routeIs('company.*')">
                             Company
@@ -122,6 +126,10 @@
 
                 <x-responsive-nav-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')">
                     Subscriptions
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.notifications.index')" :active="request()->routeIs('admin.notifications.*')">
+                    Notifications
                 </x-responsive-nav-link>
             @elseif (Auth::user()?->isBusiness())
                 <x-responsive-nav-link :href="route('company.edit')" :active="request()->routeIs('company.*')">
