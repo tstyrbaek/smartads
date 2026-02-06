@@ -208,6 +208,12 @@ export async function getTokensSummary(): Promise<TokensSummaryResponse> {
   return (await res.json()) as TokensSummaryResponse
 }
 
+export const tokensSummary = ref<TokensSummaryResponse | null>(null)
+
+export async function refreshTokensSummary(): Promise<void> {
+  tokensSummary.value = await getTokensSummary()
+}
+
 export async function saveBrand(form: FormData): Promise<Brand> {
   const res = await apiFetch('/api/brand', { method: 'POST', body: form })
   return (await res.json()) as Brand

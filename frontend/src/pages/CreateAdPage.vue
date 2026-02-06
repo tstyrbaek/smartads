@@ -11,7 +11,7 @@
           <label class="text-sm font-medium" for="text">Annonce tekst</label>
           <SpeechToTextButton v-model="text" @error="onSpeechError" />
         </div>
-        <textarea id="text" v-model="text" class="min-h-28 w-full rounded border px-3 py-2" />
+        <textarea id="text" v-model="text" class="min-h-[18rem] w-full rounded border px-3 py-2" />
         <p class="text-xs text-gray-600">
           Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
         </p>
@@ -87,7 +87,7 @@
 
           <button
             class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
-            :disabled="creating || text.trim() === ''"
+            :disabled="creating || text.trim() === '' || !canCreateAd"
             @click="onCreate"
           >
             Generér annonce
@@ -142,10 +142,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { createAd, getAd, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
+import { createAd, getAd, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
 import SpeechToTextButton from '../components/SpeechToTextButton.vue'
 
 const router = useRouter()
@@ -163,6 +163,8 @@ const showDebug = ref(false)
 const debugInfo = ref<AdCreateDebug | null>(null)
 
 const speechError = ref<string | null>(null)
+
+const minRequiredTokens = 1000
 
 type SelectedImageItem = { id: string; file: File; url: string }
 
@@ -229,6 +231,13 @@ const debugJson = computed(() => {
 
 const isLoading = computed(() => creating.value || ad.value?.status === 'generating')
 
+const canCreateAd = computed(() => {
+  const summary = tokensSummary.value
+  if (!summary) return true
+  if (summary.status !== 'active') return false
+  return summary.remaining >= minRequiredTokens
+})
+
 let pollTimer: number | null = null
 
 function clearPoll() {
@@ -282,11 +291,27 @@ async function onCreate() {
     // Let the list page take over polling as well.
     router.replace({ path: '/ads', query: { created: res.adId } })
   } catch (e) {
-    statusText.value = e instanceof Error ? e.message : 'Fejl'
+    const raw = e instanceof Error ? e.message : String(e)
+    if (raw.includes('insufficient_tokens')) {
+      const mRemaining = raw.match(/"remaining_tokens"\s*:\s*(\d+)/)
+      const mRequired = raw.match(/"required_tokens"\s*:\s*(\d+)/)
+      const remaining = mRemaining ? Number(mRemaining[1]) : null
+      const required = mRequired ? Number(mRequired[1]) : 1000
+      statusText.value =
+        remaining === null
+          ? `Du har ikke nok tokens tilbage til at oprette en annonce. Der kræves mindst ${required.toLocaleString('da-DK')} tokens.`
+          : `Du har ${remaining.toLocaleString('da-DK')} tokens tilbage. Der kræves mindst ${required.toLocaleString('da-DK')} tokens for at oprette en annonce.`
+    } else {
+      statusText.value = raw
+    }
   } finally {
     creating.value = false
   }
 }
+
+onMounted(() => {
+  refreshTokensSummary().catch(() => null)
+})
 
 onBeforeUnmount(() => {
   clearPoll()

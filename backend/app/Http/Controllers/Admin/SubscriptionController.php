@@ -92,26 +92,15 @@ class SubscriptionController extends Controller
 
         $newPlan = SubscriptionPlan::findOrFail($validated['plan_id']);
         
-        if ($validated['plan_id'] !== $subscription->plan_id) {
-            // Plan change - use upgrade/downgrade logic
-            if ($newPlan->max_tokens_per_month < $subscription->plan->max_tokens_per_month) {
-                $returnTo = $this->getReturnTo($request);
-
-                return redirect()
-                    ->route('admin.subscriptions.edit', [
-                        'subscription' => $subscription,
-                        'return_to' => $returnTo,
-                    ])
-                    ->with('error', 'Kan ikke nedgradere abonnement via denne funktion. Brug annuller og opret nyt abonnement.');
-            }
-
-            $this->subscriptionService->upgradeSubscription($subscription->company, $newPlan);
+        if ((int) $validated['plan_id'] !== (int) $subscription->plan_id) {
+            // Plan change
+            $subscription = $this->subscriptionService->upgradeSubscription($subscription->company, $newPlan);
         }
 
         $subscription->update([
-            'ends_at' => $validated['ends_at'] ? now()->parse($validated['ends_at']) : $subscription->ends_at,
-            'auto_renew' => $validated['auto_renew'],
-            'is_active' => $validated['is_active'],
+            'ends_at' => $validated['ends_at'] ? now()->parse($validated['ends_at']) : null,
+            'auto_renew' => $request->boolean('auto_renew'),
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         $returnTo = $this->getReturnTo($request);

@@ -53,6 +53,7 @@ class SubscriptionService
         $currentSubscription = $company->getCurrentSubscription();
         
         if ($currentSubscription) {
+            $oldPlanId = $currentSubscription->plan_id;
             // Keep the same billing cycle but upgrade the plan
             $currentSubscription->update([
                 'plan_id' => $newPlan->id,
@@ -60,7 +61,7 @@ class SubscriptionService
 
             Log::info('Subscription upgraded', [
                 'company_id' => $company->id,
-                'old_plan_id' => $currentSubscription->plan_id,
+                'old_plan_id' => $oldPlanId,
                 'new_plan_id' => $newPlan->id,
             ]);
 

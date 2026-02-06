@@ -113,6 +113,40 @@
     </header>
 
     <main class="mx-auto max-w-4xl px-4 py-8 pt-20">
+      <div
+        v-if="isAuthenticated && showTokensBar"
+        class="mb-6 rounded-lg border bg-white p-4"
+      >
+        <div class="flex items-center justify-between gap-4">
+          <div class="text-sm font-medium">Tokens (denne måned)</div>
+          <div class="text-xs text-gray-600">{{ tokensSummaryValue?.period ?? '' }}</div>
+        </div>
+
+        <div v-if="tokensSummaryValue" class="mt-2 grid gap-3 text-sm">
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <div class="text-xs text-gray-600">Brugt</div>
+              <div class="font-semibold">{{ tokensSummaryValue.used.toLocaleString('da-DK') }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-600">Limit</div>
+              <div class="font-semibold">{{ tokensSummaryValue.limit.toLocaleString('da-DK') }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-600">Tilbage</div>
+              <div class="font-semibold">{{ tokensSummaryValue.remaining.toLocaleString('da-DK') }}</div>
+            </div>
+          </div>
+
+          <div
+            v-if="!canCreateAd"
+            class="rounded bg-yellow-50 p-3 text-sm text-yellow-900"
+          >
+            Du har ikke nok tokens tilbage til at oprette en annonce. Der kræves mindst {{ minRequiredTokens.toLocaleString('da-DK') }} tokens.
+          </div>
+        </div>
+      </div>
+
       <RouterView />
     </main>
   </div>
@@ -121,7 +155,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { activeCompanyId, authToken, getMe, logout, type MeResponse } from './lib/api'
+import { activeCompanyId, authToken, getMe, logout, refreshTokensSummary, tokensSummary, type MeResponse } from './lib/api'
 
 const router = useRouter()
 const isAuthenticated = computed(() => Boolean(authToken.value))
@@ -159,6 +193,40 @@ async function loadMe() {
 
 watch(authToken, () => loadMe(), { immediate: true })
 
+const minRequiredTokens = 1000
+const tokensSummaryValue = computed(() => tokensSummary.value)
+
+const showTokensBar = computed(() => {
+  return Boolean(activeCompanyId.value)
+})
+
+const canCreateAd = computed(() => {
+  if (!tokensSummaryValue.value) return true
+  if (tokensSummaryValue.value.status !== 'active') return false
+  return tokensSummaryValue.value.remaining >= minRequiredTokens
+})
+
+async function loadTokens() {
+  if (!isAuthenticated.value) {
+    tokensSummary.value = null
+    return
+  }
+  if (!activeCompanyId.value) {
+    tokensSummary.value = null
+    return
+  }
+
+  try {
+    await refreshTokensSummary()
+  } catch {
+    tokensSummary.value = null
+  }
+}
+
+watch([authToken, activeCompanyId], () => {
+  loadTokens()
+})
+
 const handleClickOutside = (event: MouseEvent) => {
   if (userMenuContainer.value && !userMenuContainer.value.contains(event.target as Node)) {
     userMenuOpen.value = false
@@ -167,6 +235,7 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  loadTokens()
 })
 
 onBeforeUnmount(() => {

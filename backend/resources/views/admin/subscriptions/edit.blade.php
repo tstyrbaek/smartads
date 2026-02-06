@@ -13,6 +13,18 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    @if (session('error'))
+                        <div class="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if (session('success'))
+                        <div class="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-800">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
                     <form action="{{ route('admin.subscriptions.update', $subscription) }}" method="POST" class="space-y-6">
                         @csrf
                         @method('PATCH')
@@ -51,11 +63,13 @@
 
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
+                                <input type="hidden" name="is_active" value="0" />
                                 <input id="is_active" name="is_active" type="checkbox" value="1" {{ old('is_active', $subscription->is_active) ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <label class="text-sm text-gray-700" for="is_active">Aktiv</label>
                             </div>
 
                             <div class="flex items-start gap-3">
+                                <input type="hidden" name="auto_renew" value="0" />
                                 <input id="auto_renew" name="auto_renew" type="checkbox" value="1" {{ old('auto_renew', $subscription->auto_renew) ? 'checked' : '' }} class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <div>
                                     <label class="text-sm text-gray-700" for="auto_renew">Auto-renew</label>
@@ -75,7 +89,7 @@
 
                         <div class="rounded-md bg-yellow-50 p-4 text-sm text-yellow-900">
                             <div class="font-medium">Vigtigt</div>
-                            <div class="mt-1">Nedgradering af abonnementer er ikke tilladt. Hvis du vil nedgradere, skal du annullere det nuværende abonnement og oprette et nyt.</div>
+                            <div class="mt-1">Nedgradering af abonnementer er tilladt i admin.</div>
                         </div>
 
                         <div class="flex items-center gap-3">

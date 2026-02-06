@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Jobs\GenerateAdImageJob;
 use App\Models\Ad;
 use App\Models\Company;
+use App\Services\TokenUsageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +54,15 @@ class AdController
         $company = Company::query()->with('brand')->find($companyId);
         if (!$company) {
             abort(404);
+        }
+
+        $tokenService = app(TokenUsageService::class);
+        if (!$tokenService->canGenerateAd($company, 1000)) {
+            return response()->json([
+                'error' => 'insufficient_tokens',
+                'remaining_tokens' => $tokenService->getRemainingTokens($company),
+                'required_tokens' => 1000,
+            ], 403);
         }
 
         if (!$company->brand || !$company->brand->logo_path) {

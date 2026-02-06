@@ -8,11 +8,22 @@
 
       <div class="mt-4 md:mt-0">
         <RouterLink
+          v-if="canCreateAd"
           class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 md:w-auto"
           to="/ads/new"
         >
           Opret annonce
         </RouterLink>
+
+        <div v-else class="space-y-2">
+          <button
+            class="flex w-full cursor-not-allowed justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white opacity-50 md:w-auto"
+            type="button"
+            disabled
+          >
+            Opret annonce
+          </button>
+        </div>
       </div>
     </div>
 
@@ -127,7 +138,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import Pusher from 'pusher-js'
-import { activeCompanyId, authToken, deleteAd, listAds, toAbsoluteBackendUrl, type Ad } from '../lib/api'
+import { activeCompanyId, authToken, deleteAd, listAds, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad } from '../lib/api'
 
 const route = useRoute()
 
@@ -139,6 +150,14 @@ const previewOpen = ref(false)
 const previewUrl = ref<string | null>(null)
 
 const deletingId = ref<string | null>(null)
+
+const minRequiredTokens = 1000
+const canCreateAd = computed(() => {
+  const s = tokensSummary.value
+  if (!s) return true
+  if (s.status !== 'active') return false
+  return s.remaining >= minRequiredTokens
+})
 
 const hasGenerating = computed(() => ads.value.some((a) => a.status === 'generating' || a.status === 'creating'))
 
@@ -316,5 +335,10 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   clearPoll()
   teardownRealtime()
+})
+
+onMounted(() => {
+  load()
+  refreshTokensSummary().catch(() => null)
 })
 </script>

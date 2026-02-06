@@ -6,6 +6,31 @@
     </div>
 
     <div class="grid gap-4 rounded-lg border bg-white p-4">
+      <div v-if="tokensSummary" class="rounded border bg-gray-50 p-3 text-sm text-gray-800">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-medium">Tokens (denne måned)</div>
+          <div class="text-xs text-gray-600">{{ tokensSummary.period }}</div>
+        </div>
+        <div class="mt-2 grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <div class="text-xs text-gray-600">Brugt</div>
+            <div class="font-semibold">{{ tokensSummary.used.toLocaleString('da-DK') }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-600">Limit</div>
+            <div class="font-semibold">{{ tokensSummary.limit.toLocaleString('da-DK') }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-600">Tilbage</div>
+            <div class="font-semibold">{{ tokensSummary.remaining.toLocaleString('da-DK') }}</div>
+          </div>
+        </div>
+
+        <div v-if="!canCreateAd" class="mt-3 rounded bg-yellow-50 p-3 text-sm text-yellow-900">
+          Du har ikke nok tokens tilbage til at oprette en annonce. Der kræves mindst {{ minRequiredTokens.toLocaleString('da-DK') }} tokens.
+        </div>
+      </div>
+
       <div class="grid gap-2">
         <label class="text-sm font-medium" for="text">Annonce tekst</label>
         <textarea id="text" v-model="text" class="min-h-28 w-full rounded border px-3 py-2" />
@@ -27,7 +52,7 @@
       <div class="flex items-center gap-3">
         <button
           class="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          :disabled="creating || text.trim() === ''"
+          :disabled="creating || text.trim() === '' || !canCreateAd"
           @click="onCreate"
         >
           Generér annonce
@@ -77,8 +102,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { createAd, getAd, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { createAd, getAd, getTokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug, type TokensSummaryResponse } from '../lib/api'
 
 const text = ref('')
 const creating = ref(false)
@@ -92,6 +117,9 @@ const showDebug = ref(false)
 const debugInfo = ref<AdCreateDebug | null>(null)
 
 const selectedImages = ref<File[]>([])
+
+const minRequiredTokens = 1000
+const tokensSummary = ref<TokensSummaryResponse | null>(null)
 
 function onImages(e: Event) {
   const input = e.target as HTMLInputElement
@@ -107,6 +135,20 @@ const debugJson = computed(() => {
 })
 
 const isLoading = computed(() => creating.value || ad.value?.status === 'generating')
+
+const canCreateAd = computed(() => {
+  if (!tokensSummary.value) return true
+  if (tokensSummary.value.status !== 'active') return false
+  return tokensSummary.value.remaining >= minRequiredTokens
+})
+
+async function loadTokens() {
+  try {
+    tokensSummary.value = await getTokensSummary()
+  } catch {
+    tokensSummary.value = null
+  }
+}
 
 let pollTimer: number | null = null
 
@@ -163,5 +205,9 @@ async function onCreate() {
 
 onBeforeUnmount(() => {
   clearPoll()
+})
+
+onMounted(() => {
+  loadTokens()
 })
 </script>
