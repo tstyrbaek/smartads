@@ -29,13 +29,19 @@ class SubscriptionPlanController extends Controller
             'description' => ['nullable', 'string'],
             'max_tokens_per_month' => ['required', 'integer', 'min:1'],
             'price_per_month' => ['required', 'numeric', 'min:0'],
-            'features' => ['nullable', 'array'],
-            'features.*' => ['string'],
+            'features' => ['required', 'array', 'min:1'],
+            'features.*' => ['required', 'string', 'min:1'],
             'is_active' => ['boolean'],
         ]);
 
         $features = $validated['features'] ?? [];
         $filteredFeatures = array_filter($features, fn($feature) => !empty(trim($feature)));
+
+        if (count($filteredFeatures) === 0) {
+            return back()
+                ->withErrors(['features' => 'Mindst én feature er påkrævet'])
+                ->withInput();
+        }
 
         SubscriptionPlan::create([
             'name' => $validated['name'],
@@ -65,13 +71,19 @@ class SubscriptionPlanController extends Controller
             'description' => ['nullable', 'string'],
             'max_tokens_per_month' => ['required', 'integer', 'min:1'],
             'price_per_month' => ['required', 'numeric', 'min:0'],
-            'features' => ['nullable', 'array'],
-            'features.*' => ['string'],
+            'features' => ['required', 'array', 'min:1'],
+            'features.*' => ['required', 'string', 'min:1'],
             'is_active' => ['boolean'],
         ]);
 
         $features = $validated['features'] ?? [];
         $filteredFeatures = array_filter($features, fn($feature) => !empty(trim($feature)));
+
+        if (count($filteredFeatures) === 0) {
+            return back()
+                ->withErrors(['features' => 'Mindst én feature er påkrævet'])
+                ->withInput();
+        }
 
         $subscriptionPlan->update([
             'name' => $validated['name'],

@@ -56,13 +56,17 @@
                         </div>
 
                         <div>
-                            <label class="block font-medium text-sm text-gray-700">Features</label>
+                            <label class="block font-medium text-sm text-gray-700">Features *</label>
                             <div id="features-container" class="mt-2 space-y-2">
                                 <div class="feature-input-group">
-                                    <input type="text" class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" name="features[]" placeholder="Indtast feature" value="{{ old('features.0') }}">
+                                    <input type="text" class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" name="features[]" placeholder="Indtast feature" value="{{ old('features.0') }}" required>
                                     <button type="button" class="remove-feature inline-flex items-center px-3 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Slet</button>
                                 </div>
                             </div>
+
+                            @if ($errors->has('features') || $errors->has('features.*'))
+                                <p class="mt-1 text-sm text-red-600">{{ $errors->first('features') ?: $errors->first('features.*') }}</p>
+                            @endif
 
                             <div class="mt-3">
                                 <button type="button" id="add-feature" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Tilføj feature</button>
