@@ -28,6 +28,8 @@ class Ad extends Model
         'status',
         'error',
         'local_file_path',
+        'image_width',
+        'image_height',
         'input_image_paths',
         'debug',
     ];

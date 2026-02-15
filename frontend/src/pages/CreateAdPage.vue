@@ -11,7 +11,7 @@
           <label class="text-sm font-medium" for="text">Annonce tekst</label>
           <SpeechToTextButton v-model="text" @error="onSpeechError" />
         </div>
-        <textarea id="text" v-model="text" class="min-h-[18rem] w-full rounded border px-3 py-2" />
+        <textarea id="text" v-model="text" class="min-h-[18rem] w-full rounded border px-3 py-2"></textarea>
         <p class="text-xs text-gray-600">
           Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
         </p>
@@ -26,12 +26,25 @@
             <label class="text-sm font-medium" for="instructions">Instrukser</label>
             <SpeechToTextButton v-model="instructions" @error="onSpeechError" />
           </div>
-          <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border bg-white px-3 py-2" />
+          <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border bg-white px-3 py-2"></textarea>
           <p class="text-xs text-gray-600">
             Beskriv hvordan annoncen skal se ud. Fx "minimalistisk", "ingen mennesker", "stort CTA", "lys baggrund".
           </p>
         </div>
       </details>
+
+      <div class="rounded border bg-gray-50 p-3">
+        <div class="grid gap-2">
+          <div class="text-sm font-medium text-gray-900">Annonce størrelse (px)</div>
+          <div class="grid gap-1">
+            <label class="sr-only" for="sizePreset">Format</label>
+            <select id="sizePreset" v-model="sizePreset" class="w-full rounded border bg-white px-3 py-2">
+              <option v-for="opt in sizePresetOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+          <div class="text-xs text-gray-600">Størrelse: {{ imageWidth }}×{{ imageHeight }} px</div>
+        </div>
+      </div>
 
       <div v-if="speechError" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
         {{ speechError }}
@@ -142,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createAd, getAd, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
@@ -152,6 +165,9 @@ const router = useRouter()
 
 const text = ref('')
 const instructions = ref('')
+const sizePreset = ref('square_800')
+const imageWidth = ref(800)
+const imageHeight = ref(800)
 const creating = ref(false)
 const statusText = ref<string | null>(null)
 
@@ -170,6 +186,28 @@ type SelectedImageItem = { id: string; file: File; url: string }
 
 const selectedImageItems = ref<SelectedImageItem[]>([])
 const dragSourceId = ref<string | null>(null)
+
+type SizePresetOption = { value: string; label: string; width: number | null; height: number | null }
+
+const sizePresetOptions: SizePresetOption[] = [
+  { value: 'square_800', label: 'Kvadrat (800×800)', width: 800, height: 800 },
+  { value: 'square_1080', label: 'Kvadrat (1080×1080)', width: 1080, height: 1080 },
+  { value: 'social_4_5', label: 'SoMe (1080×1350)', width: 1080, height: 1350 },
+  { value: 'banner_16_9', label: 'Banner (1200×628)', width: 1200, height: 628 },
+]
+
+watch(
+  sizePreset,
+  (val) => {
+    const preset = sizePresetOptions.find((x) => x.value === val)
+    if (!preset) return
+    if (preset.width && preset.height) {
+      imageWidth.value = preset.width
+      imageHeight.value = preset.height
+    }
+  },
+  { immediate: true },
+)
 
 function onImages(e: Event) {
   const input = e.target as HTMLInputElement
@@ -275,6 +313,8 @@ async function onCreate() {
       debug: showDebug.value,
       images: selectedImages.value,
       instructions: instructions.value,
+      imageWidth: imageWidth.value,
+      imageHeight: imageHeight.value,
     })
 
     if (showDebug.value) {

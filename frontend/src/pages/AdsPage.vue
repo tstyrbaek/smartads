@@ -38,13 +38,13 @@
 
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         <div v-for="ad in ads" :key="ad.id" class="overflow-hidden rounded-lg border bg-white shadow-sm">
-          <div class="aspect-square w-full bg-gray-100 relative">
+          <div class="w-full bg-gray-100 relative">
               <img
                 v-if="ad.localFilePath"
                 :src="toAbsoluteBackendUrl(ad.localFilePath)"
-                class="h-full w-full object-cover"
+                class="block w-full h-auto object-contain"
               />
-              <div v-else class="flex h-full w-full items-center justify-center">
+              <div v-else class="flex min-h-[220px] w-full items-center justify-center">
                 <div class="text-center text-xs text-gray-500">
                   <div v-if="ad.status === 'creating' || ad.status === 'generating'" class="flex flex-col items-center gap-2">
                     <span class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
@@ -110,6 +110,10 @@
             </div>
           </div>
 
+          <div v-if="ad.imageWidth && ad.imageHeight" class="border-t bg-white px-3 py-2 text-xs text-gray-600">
+            Størrelse: {{ ad.imageWidth }}×{{ ad.imageHeight }} px
+          </div>
+
           <div v-if="(ad.integrationInstances?.length ?? 0) > 0" class="border-t bg-white px-3 py-2">
             <div class="space-y-1 text-xs text-gray-700">
               <div v-for="inst in ad.integrationInstances" :key="inst.id">
@@ -138,7 +142,10 @@
         <div class="p-4">
           <img v-if="previewUrl" :src="previewUrl" class="mx-auto max-h-[70vh] w-auto rounded border" />
 
-          <div class="mt-4 flex items-center justify-end gap-2">
+          <div class="mt-4 flex items-center justify-between gap-2">
+            <div v-if="previewAd?.imageWidth && previewAd?.imageHeight" class="mb-3 text-xs text-gray-600">
+            Størrelse: {{ previewAd.imageWidth }}×{{ previewAd.imageHeight }} px
+          </div>
             <a
               v-if="previewUrl"
               class="inline-flex rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
@@ -252,6 +259,7 @@ const error = ref<string | null>(null)
 
 const previewOpen = ref(false)
 const previewUrl = ref<string | null>(null)
+const previewAd = ref<Ad | null>(null)
 
 const deletingId = ref<string | null>(null)
 
@@ -293,6 +301,7 @@ function openPreview(ad: Ad) {
   const local = ad.localFilePath
   if (!local) return
   previewUrl.value = toAbsoluteBackendUrl(local)
+  previewAd.value = ad
   previewOpen.value = true
 }
 
@@ -305,6 +314,7 @@ function cardDownloadUrl(ad: Ad): string | undefined {
 function closePreview() {
   previewOpen.value = false
   previewUrl.value = null
+  previewAd.value = null
 }
 
 async function openPublish(ad: Ad) {

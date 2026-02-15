@@ -40,6 +40,15 @@ class GenerateAdImageJob implements ShouldQueue
             return;
         }
 
+        $imageWidth = is_numeric($ad->image_width) ? (int) $ad->image_width : 800;
+        $imageHeight = is_numeric($ad->image_height) ? (int) $ad->image_height : 800;
+        if ($imageWidth < 50 || $imageWidth > 4000) {
+            $imageWidth = 800;
+        }
+        if ($imageHeight < 50 || $imageHeight > 4000) {
+            $imageHeight = 800;
+        }
+
         $company = Company::query()->with('brand')->find($ad->company_id);
         if (!$company) {
             $ad->forceFill([
@@ -111,7 +120,8 @@ class GenerateAdImageJob implements ShouldQueue
 
         $instructions = is_string($ad->instructions) ? trim($ad->instructions) : '';
 
-        $prompt = "Create a clean, modern square 1:1 web advertisement image.\n";
+        $prompt = "Create a clean, modern web advertisement image.\n";
+        $prompt .= "Target output size: {$imageWidth}x{$imageHeight} pixels.\n";
         if ($colorsText !== '') {
             $prompt .= "Use the brand colors: {$colorsText}.\n";
         }
@@ -192,7 +202,45 @@ class GenerateAdImageJob implements ShouldQueue
         }
 
         $model = (string) config('services.gemini.model', 'gemini-3-pro-image-preview');
-        $aspectRatio = (string) config('services.gemini.aspect_ratio', '1:1');
+        $defaultAspectRatio = (string) config('services.gemini.aspect_ratio', '1:1');
+        $aspectRatio = (function () use ($imageWidth, $imageHeight, $defaultAspectRatio) {
+            $w = $imageWidth;
+            $h = $imageHeight;
+            if ($w <= 0 || $h <= 0) {
+                return '1:1';
+            }
+
+            // Gemini only accepts a fixed enum of aspect ratios.
+            $allowed = [
+                '1:1' => 1.0,
+                '2:3' => 2 / 3,
+                '3:2' => 3 / 2,
+                '3:4' => 3 / 4,
+                '4:3' => 4 / 3,
+                '4:5' => 4 / 5,
+                '5:4' => 5 / 4,
+                '9:16' => 9 / 16,
+                '16:9' => 16 / 9,
+                '21:9' => 21 / 9,
+            ];
+
+            $safeDefault = array_key_exists($defaultAspectRatio, $allowed) ? $defaultAspectRatio : '1:1';
+
+            $ratio = $w / $h;
+            $bestKey = $safeDefault;
+            $bestScore = null;
+
+            foreach ($allowed as $key => $allowedRatio) {
+                // Compare in log space so portrait/landscape errors behave symmetrically.
+                $score = abs(log($ratio) - log($allowedRatio));
+                if ($bestScore === null || $score < $bestScore) {
+                    $bestScore = $score;
+                    $bestKey = $key;
+                }
+            }
+
+            return $bestKey;
+        })();
         $imageSize = (string) config('services.gemini.image_size', '1K');
 
         try {
@@ -224,6 +272,11 @@ class GenerateAdImageJob implements ShouldQueue
                 default => 'bin',
             };
 
+            $resizedBin = $this->resizeImageBinary($generatedBin, $ext, $imageWidth, $imageHeight);
+            if (is_string($resizedBin) && $resizedBin !== '') {
+                $generatedBin = $resizedBin;
+            }
+
             $relative = 'generated/ads/' . $ad->id . '.' . $ext;
             Storage::disk('public')->put($relative, $generatedBin);
 
@@ -234,6 +287,7 @@ class GenerateAdImageJob implements ShouldQueue
                         'model' => $model,
                         'prompt' => $prompt,
                         'aspectRatio' => $aspectRatio,
+                        'targetSizePx' => $imageWidth . 'x' . $imageHeight,
                         'imageSize' => $imageSize,
                         'referenceImagesCount' => count($referenceImages),
                         'productImagesCount' => $productCount,
@@ -289,6 +343,114 @@ class GenerateAdImageJob implements ShouldQueue
         } finally {
             Storage::disk('local')->deleteDirectory('tmp/ad-input/' . $ad->id);
         }
+    }
+
+    private function resizeImageBinary(string $bin, string $ext, int $targetWidth, int $targetHeight): ?string
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        if ($targetWidth < 1 || $targetHeight < 1) {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($bin);
+        if ($src === false) {
+            return null;
+        }
+
+        $srcWidth = imagesx($src);
+        $srcHeight = imagesy($src);
+        if (!is_int($srcWidth) || !is_int($srcHeight) || $srcWidth < 1 || $srcHeight < 1) {
+            imagedestroy($src);
+            return null;
+        }
+
+        $targetRatio = $targetWidth / $targetHeight;
+        $mode = ($targetRatio > 3.0 || $targetRatio < (1 / 3)) ? 'contain' : 'cover';
+
+        $dst = imagecreatetruecolor($targetWidth, $targetHeight);
+        if ($dst === false) {
+            imagedestroy($src);
+            return null;
+        }
+
+        if (in_array($ext, ['png', 'webp'], true)) {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+            imagefilledrectangle($dst, 0, 0, $targetWidth, $targetHeight, $transparent);
+        } else {
+            $white = imagecolorallocate($dst, 255, 255, 255);
+            imagefilledrectangle($dst, 0, 0, $targetWidth, $targetHeight, $white);
+        }
+
+        if ($mode === 'contain') {
+            $scale = min($targetWidth / $srcWidth, $targetHeight / $srcHeight);
+            $dstW = (int) max(1, floor($srcWidth * $scale));
+            $dstH = (int) max(1, floor($srcHeight * $scale));
+            $dstX = (int) max(0, floor(($targetWidth - $dstW) / 2));
+            $dstY = (int) max(0, floor(($targetHeight - $dstH) / 2));
+
+            $ok = imagecopyresampled(
+                $dst,
+                $src,
+                $dstX,
+                $dstY,
+                0,
+                0,
+                $dstW,
+                $dstH,
+                $srcWidth,
+                $srcHeight,
+            );
+        } else {
+            $scale = max($targetWidth / $srcWidth, $targetHeight / $srcHeight);
+            $cropWidth = (int) ceil($targetWidth / $scale);
+            $cropHeight = (int) ceil($targetHeight / $scale);
+            $srcX = (int) max(0, floor(($srcWidth - $cropWidth) / 2));
+            $srcY = (int) max(0, floor(($srcHeight - $cropHeight) / 2));
+
+            $ok = imagecopyresampled(
+                $dst,
+                $src,
+                0,
+                0,
+                $srcX,
+                $srcY,
+                $targetWidth,
+                $targetHeight,
+                $cropWidth,
+                $cropHeight,
+            );
+        }
+
+        imagedestroy($src);
+
+        if ($ok !== true) {
+            imagedestroy($dst);
+            return null;
+        }
+
+        ob_start();
+        try {
+            if ($ext === 'png') {
+                imagepng($dst);
+            } elseif ($ext === 'webp' && function_exists('imagewebp')) {
+                imagewebp($dst, null, 90);
+            } else {
+                imagejpeg($dst, null, 90);
+            }
+            $out = ob_get_clean();
+        } catch (\Throwable) {
+            ob_end_clean();
+            $out = null;
+        } finally {
+            imagedestroy($dst);
+        }
+
+        return is_string($out) && $out !== '' ? $out : null;
     }
 
     private function estimateTokensNeeded(Ad $ad): int

@@ -45,6 +45,8 @@ class AdController
         $validated = $request->validate([
             'text' => ['required', 'string'],
             'instructions' => ['nullable', 'string', 'max:2000'],
+            'image_width' => ['nullable', 'integer', 'min:50', 'max:4000'],
+            'image_height' => ['nullable', 'integer', 'min:50', 'max:4000'],
             'debug' => ['nullable'],
             'images' => ['nullable'],
             'images.*' => ['nullable', 'image', 'max:5120'],
@@ -105,6 +107,8 @@ class AdController
             'title' => $title,
             'text' => (string) $validated['text'],
             'instructions' => isset($validated['instructions']) ? (string) $validated['instructions'] : null,
+            'image_width' => isset($validated['image_width']) && is_numeric($validated['image_width']) ? (int) $validated['image_width'] : 800,
+            'image_height' => isset($validated['image_height']) && is_numeric($validated['image_height']) ? (int) $validated['image_height'] : 800,
             'status' => 'generating',
             'input_image_paths' => $imagePaths,
         ]);
@@ -294,6 +298,8 @@ class AdController
             'status' => $ad->status,
             'nanobananaTaskId' => null,
             'localFilePath' => $filePath,
+            'imageWidth' => is_numeric($ad->image_width) ? (int) $ad->image_width : 800,
+            'imageHeight' => is_numeric($ad->image_height) ? (int) $ad->image_height : 800,
             'integrationInstances' => $ad->integrationInstances
                 ->map(fn (IntegrationInstance $instance) => [
                     'id' => (int) $instance->id,
