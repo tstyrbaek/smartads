@@ -65,3 +65,4 @@ coverage/
 *.tmp
 frontend/.env
 .env
+backend/public/index.html
