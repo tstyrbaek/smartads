@@ -54,6 +54,7 @@
                                     <th class="py-2 pr-4">
                                         <a href="{{ request()->fullUrlWithQuery(['sort' => 'status', 'dir' => ($sort === 'status' && $dir === 'asc') ? 'desc' : 'asc']) }}" class="hover:text-gray-700">Status</a>
                                     </th>
+                                    <th class="py-2 pr-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -80,6 +81,9 @@
                                             @endif
                                         </td>
                                         <td class="py-2 pr-4 text-sm">{{ $ad->status }}</td>
+                                        <td class="py-2 pr-4 text-sm text-right">
+                                            <a href="{{ route('admin.ads.publish.edit', $ad) }}" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-xs font-semibold text-gray-700 border border-gray-300 hover:bg-gray-50">Publicér</a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

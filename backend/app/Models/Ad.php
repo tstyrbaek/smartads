@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Ad extends Model
 {
@@ -45,5 +46,12 @@ class Ad extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function integrationInstances(): BelongsToMany
+    {
+        return $this->belongsToMany(IntegrationInstance::class, 'ad_integration_instance', 'ad_id', 'integration_instance_id')
+            ->withPivot(['status', 'published_at', 'meta'])
+            ->withTimestamps();
     }
 }

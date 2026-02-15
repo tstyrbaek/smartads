@@ -76,7 +76,7 @@ class CompanyController extends Controller
     public function edit(Company $company): View
     {
         return view('admin.companies.edit', [
-            'company' => $company->loadMissing('brand', 'users', 'subscription.plan', 'subscriptions.plan'),
+            'company' => $company->loadMissing('brand', 'users', 'subscription.plan', 'subscriptions.plan', 'integrationInstances'),
             'users' => User::query()->orderBy('name')->get(),
         ]);
     }

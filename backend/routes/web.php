@@ -6,13 +6,17 @@ use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
+use App\Http\Controllers\Admin\AdPublishController as AdminAdPublishController;
 use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Admin\CompanySubscriptionController as AdminCompanySubscriptionController;
 use App\Http\Controllers\Admin\NotificationCampaignController as AdminNotificationCampaignController;
+use App\Http\Controllers\Admin\IntegrationInstanceController as AdminIntegrationInstanceController;
+use App\Http\Controllers\Admin\IntegrationDefinitionController as AdminIntegrationDefinitionController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanySelectionController;
 use App\Http\Controllers\CronQueueController;
+use App\Http\Controllers\PublicEmbedController;
 use App\Models\Ad;
 use App\Models\Company;
 use App\Models\User;
@@ -63,11 +67,21 @@ Route::prefix('admin')->group(function () {
         Route::patch('/companies/{company}', [AdminCompanyController::class, 'update'])->name('companies.update');
         Route::delete('/companies/{company}', [AdminCompanyController::class, 'destroy'])->name('companies.destroy');
 
+        // Company integrations (instances)
+        Route::get('/companies/{company}/integrations/create', [AdminIntegrationInstanceController::class, 'create'])->name('companies.integrations.create');
+        Route::post('/companies/{company}/integrations', [AdminIntegrationInstanceController::class, 'store'])->name('companies.integrations.store');
+        Route::get('/companies/{company}/integrations/{instance}/edit', [AdminIntegrationInstanceController::class, 'edit'])->name('companies.integrations.edit');
+        Route::patch('/companies/{company}/integrations/{instance}', [AdminIntegrationInstanceController::class, 'update'])->name('companies.integrations.update');
+        Route::delete('/companies/{company}/integrations/{instance}', [AdminIntegrationInstanceController::class, 'destroy'])->name('companies.integrations.destroy');
+
         // Company subscriptions
         Route::get('/companies/{company}/subscriptions/create', [AdminCompanySubscriptionController::class, 'create'])->name('companies.subscriptions.create');
         Route::post('/companies/{company}/subscriptions', [AdminCompanySubscriptionController::class, 'store'])->name('companies.subscriptions.store');
 
         Route::get('/ads', [AdminAdController::class, 'index'])->name('ads.index');
+
+        Route::get('/ads/{ad}/publish', [AdminAdPublishController::class, 'edit'])->name('ads.publish.edit');
+        Route::patch('/ads/{ad}/publish', [AdminAdPublishController::class, 'update'])->name('ads.publish.update');
 
         // Subscription Plans
         Route::get('/subscription-plans', [AdminSubscriptionPlanController::class, 'index'])->name('subscription-plans.index');
@@ -96,18 +110,22 @@ Route::prefix('admin')->group(function () {
         Route::patch('/notifications/{campaign}', [AdminNotificationCampaignController::class, 'update'])->name('notifications.update');
         Route::delete('/notifications/{campaign}', [AdminNotificationCampaignController::class, 'destroy'])->name('notifications.destroy');
 
-        Route::get('/brands', fn () => redirect()->route('admin.companies.index'))->name('brands.index');
-        Route::get('/brands/create', fn () => redirect()->route('admin.companies.create'))->name('brands.create');
-        Route::post('/brands', fn () => redirect()->route('admin.companies.index'))->name('brands.store');
-        Route::get('/brands/{brand}/edit', fn () => redirect()->route('admin.companies.index'))->name('brands.edit');
-        Route::patch('/brands/{brand}', fn () => redirect()->route('admin.companies.index'))->name('brands.update');
-        Route::delete('/brands/{brand}', fn () => redirect()->route('admin.companies.index'))->name('brands.destroy');
+        // Integration definitions
+        Route::get('/integration-definitions', [AdminIntegrationDefinitionController::class, 'index'])->name('integration-definitions.index');
+        Route::get('/integration-definitions/create', [AdminIntegrationDefinitionController::class, 'create'])->name('integration-definitions.create');
+        Route::post('/integration-definitions', [AdminIntegrationDefinitionController::class, 'store'])->name('integration-definitions.store');
+        Route::get('/integration-definitions/{definition}/edit', [AdminIntegrationDefinitionController::class, 'edit'])->name('integration-definitions.edit');
+        Route::patch('/integration-definitions/{definition}', [AdminIntegrationDefinitionController::class, 'update'])->name('integration-definitions.update');
+        Route::delete('/integration-definitions/{definition}', [AdminIntegrationDefinitionController::class, 'destroy'])->name('integration-definitions.destroy');
     });
 
     require __DIR__ . '/auth.php';
 });
 
 Route::get('/cron/queue', [CronQueueController::class, 'run']);
+
+Route::get('/embed/{instance}/script.js', [PublicEmbedController::class, 'script'])->name('embed.script');
+Route::get('/embed/{instance}/render', [PublicEmbedController::class, 'render'])->name('embed.render');
 
 Route::get('/', function () {
     return response()->file(public_path('index.html'));

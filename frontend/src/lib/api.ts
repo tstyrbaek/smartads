@@ -79,8 +79,35 @@ export type Ad = {
   nanobananaTaskId?: string | null
   resultImageUrl?: string | null
   localFilePath?: string | null
+  integrationInstances?: {
+    id: number
+    integration_key: string
+    name: string
+    is_active: boolean
+    published_at?: string | null
+  }[]
   error?: string | null
   updatedAt?: string | null
+}
+
+export type IntegrationDefinition = {
+  key: string
+  type: string
+  name: string
+  description?: string | null
+  capabilities?: any[] | null
+  is_active: boolean
+}
+
+export type IntegrationInstance = {
+  id: number
+  company_id: number
+  integration_key: string
+  name: string
+  is_active: boolean
+  config?: Record<string, any> | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 import { ref } from 'vue'
@@ -123,13 +150,26 @@ async function apiFetch(path: string, init?: RequestInit) {
   const companyId = activeCompanyId.value
 
   const headers = new Headers(init?.headers ?? undefined)
+  if (!headers.has('accept')) headers.set('accept', 'application/json')
   if (token) headers.set('authorization', `Bearer ${token}`)
   if (companyId) headers.set('X-Company-Id', companyId)
 
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+
+  const contentType = res.headers.get('content-type') ?? ''
+  const isApiPath = path.startsWith('/api/')
+  const isHtml = contentType.includes('text/html')
+
+  if (isApiPath && isHtml) {
+    const text = await res.text()
+    const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim()
+    throw new Error(`Uventet HTML-svar fra API (HTTP ${res.status}). ${snippet}`)
+  }
+
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text || `HTTP ${res.status}`)
+    const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim()
+    throw new Error(snippet || `HTTP ${res.status}`)
   }
   return res
 }
@@ -238,6 +278,51 @@ export async function saveBrand(form: FormData): Promise<Brand> {
   return (await res.json()) as Brand
 }
 
+export async function listIntegrationDefinitions(): Promise<{ definitions: IntegrationDefinition[] }> {
+  const res = await apiFetch('/api/integrations/definitions')
+  return (await res.json()) as { definitions: IntegrationDefinition[] }
+}
+
+export async function listIntegrationInstances(): Promise<{ instances: IntegrationInstance[] }> {
+  const res = await apiFetch('/api/integrations/instances')
+  return (await res.json()) as { instances: IntegrationInstance[] }
+}
+
+export async function createIntegrationInstance(input: {
+  integration_key: string
+  name: string
+  is_active: boolean
+  config?: Record<string, any> | null
+}): Promise<{ instance: IntegrationInstance }> {
+  const res = await apiFetch('/api/integrations/instances', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { instance: IntegrationInstance }
+}
+
+export async function updateIntegrationInstance(
+  id: number,
+  input: {
+    integration_key: string
+    name: string
+    is_active: boolean
+    config?: Record<string, any> | null
+  },
+): Promise<{ instance: IntegrationInstance }> {
+  const res = await apiFetch(`/api/integrations/instances/${encodeURIComponent(String(id))}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { instance: IntegrationInstance }
+}
+
+export async function deleteIntegrationInstance(id: number): Promise<void> {
+  await apiFetch(`/api/integrations/instances/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+}
+
 export type AdCreateDebug = {
   mode?: string
   prompt?: string
@@ -289,4 +374,18 @@ export async function listAds(): Promise<{ ads: Ad[] }> {
 
 export async function deleteAd(id: string): Promise<void> {
   await apiFetch(`/api/ads/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function getAdIntegrations(id: string): Promise<{ selected_instance_ids: number[] }> {
+  const res = await apiFetch(`/api/ads/${encodeURIComponent(id)}/integrations`)
+  return (await res.json()) as { selected_instance_ids: number[] }
+}
+
+export async function updateAdIntegrations(id: string, instanceIds: number[]): Promise<{ ok: true; ad: Ad }> {
+  const res = await apiFetch(`/api/ads/${encodeURIComponent(id)}/integrations`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ instance_ids: instanceIds }),
+  })
+  return (await res.json()) as { ok: true; ad: Ad }
 }

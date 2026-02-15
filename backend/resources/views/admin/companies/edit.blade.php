@@ -225,6 +225,54 @@
                             </div>
                         </details>
 
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="font-medium text-gray-900">Integrationer</div>
+                                    <div class="mt-1 text-sm text-gray-500">Aktive integrationer/targets som annoncer kan publiceres til.</div>
+                                </div>
+
+                                <a href="{{ route('admin.companies.integrations.create', $company) }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Opret integration</a>
+                            </div>
+
+                            <div class="mt-4 overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Navn</th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key</th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        @forelse($company->integrationInstances as $instance)
+                                            <tr>
+                                                <td class="px-3 py-2 text-sm text-gray-900">
+                                                    <div class="font-medium">{{ $instance->name }}</div>
+                                                </td>
+                                                <td class="px-3 py-2 text-sm text-gray-900">{{ $instance->integration_key }}</td>
+                                                <td class="px-3 py-2 text-sm text-gray-900">
+                                                    @if($instance->is_active)
+                                                        <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Aktiv</span>
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">Inaktiv</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-sm text-gray-900 text-right">
+                                                    <a href="{{ route('admin.companies.integrations.edit', [$company, $instance]) }}" class="inline-flex items-center px-3 py-1 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50">Edit</a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="px-3 py-4 text-sm text-gray-500">Ingen integrationer</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="flex items-center gap-3">
                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Save</button>
                             <a href="{{ route('admin.companies.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Back</a>

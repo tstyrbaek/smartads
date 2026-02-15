@@ -38,8 +38,7 @@
 
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         <div v-for="ad in ads" :key="ad.id" class="overflow-hidden rounded-lg border bg-white shadow-sm">
-          <div class="relative">
-            <div class="aspect-square w-full bg-gray-100">
+          <div class="aspect-square w-full bg-gray-100 relative">
               <img
                 v-if="ad.localFilePath"
                 :src="toAbsoluteBackendUrl(ad.localFilePath)"
@@ -55,7 +54,7 @@
                   <span v-else>Intet billede</span>
                 </div>
               </div>
-            </div>
+
             <div class="absolute bottom-2 right-2 flex items-center justify-end gap-2">
               <a
                 v-if="ad.status === 'success' && ad.localFilePath"
@@ -82,6 +81,21 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
+
+              <button
+                class="rounded bg-white/80 p-2 text-gray-700 hover:bg-white disabled:opacity-50"
+                type="button"
+                title="Publicér"
+                :disabled="publishSaving"
+                @click="openPublish(ad)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </button>
+
               <button
                 class="rounded bg-white/80 p-2 text-red-700 hover:bg-white disabled:opacity-50"
                 type="button"
@@ -93,6 +107,15 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
+            </div>
+          </div>
+
+          <div v-if="(ad.integrationInstances?.length ?? 0) > 0" class="border-t bg-white px-3 py-2">
+            <div class="space-y-1 text-xs text-gray-700">
+              <div v-for="inst in ad.integrationInstances" :key="inst.id">
+                Udgivet på {{ inst.name }}
+                <span v-if="inst.published_at">d. {{ new Date(inst.published_at).toLocaleDateString('da-DK') }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -130,6 +153,75 @@
         </div>
       </div>
     </div>
+
+    <div
+      v-if="publishOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      @click.self="closePublish"
+    >
+      <div class="w-full max-w-xl rounded-lg bg-white shadow">
+        <div class="flex items-center justify-between border-b px-4 py-3">
+          <div class="text-sm font-medium">Publicér annonce</div>
+          <button class="rounded px-2 py-1 text-sm hover:bg-gray-100" type="button" @click="closePublish">
+            Luk
+          </button>
+        </div>
+
+        <div class="p-4">
+          <div v-if="publishError" class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {{ publishError }}
+          </div>
+
+          <div v-if="publishLoading" class="text-sm text-gray-700">Henter...</div>
+          <div v-else>
+            <div v-if="publishInstances.length === 0" class="text-sm text-gray-700">Ingen integrationer endnu.</div>
+
+            <div v-else class="space-y-3">
+              <label
+                v-for="inst in publishInstances"
+                :key="inst.id"
+                class="flex items-start gap-3 rounded border p-3"
+              >
+                <input
+                  type="checkbox"
+                  class="mt-1 h-4 w-4"
+                  :value="inst.id"
+                  v-model="publishSelectedIds"
+                />
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-gray-900">{{ inst.name }}</div>
+                  <div class="text-xs text-gray-500">{{ inst.integration_key }}</div>
+                </div>
+                <div class="ml-auto">
+                  <span
+                    v-if="inst.is_active"
+                    class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
+                  >Aktiv</span>
+                  <span
+                    v-else
+                    class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20"
+                  >Inaktiv</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="mt-4 flex items-center justify-end gap-2">
+              <button
+                class="inline-flex rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                type="button"
+                :disabled="publishSaving"
+                @click="savePublish"
+              >
+                Gem
+              </button>
+              <button class="inline-flex rounded border px-4 py-2 text-sm font-medium" type="button" @click="closePublish">
+                Annuller
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -138,7 +230,19 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import Pusher from 'pusher-js'
-import { activeCompanyId, authToken, deleteAd, listAds, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad } from '../lib/api'
+import {
+  activeCompanyId,
+  authToken,
+  deleteAd,
+  listAds,
+  listIntegrationInstances,
+  refreshTokensSummary,
+  tokensSummary,
+  toAbsoluteBackendUrl,
+  updateAdIntegrations,
+  type Ad,
+  type IntegrationInstance,
+} from '../lib/api'
 
 const route = useRoute()
 
@@ -150,6 +254,14 @@ const previewOpen = ref(false)
 const previewUrl = ref<string | null>(null)
 
 const deletingId = ref<string | null>(null)
+
+const publishOpen = ref(false)
+const publishLoading = ref(false)
+const publishSaving = ref(false)
+const publishError = ref<string | null>(null)
+const publishAdId = ref<string | null>(null)
+const publishInstances = ref<IntegrationInstance[]>([])
+const publishSelectedIds = ref<number[]>([])
 
 const minRequiredTokens = 1000
 const canCreateAd = computed(() => {
@@ -193,6 +305,57 @@ function cardDownloadUrl(ad: Ad): string | undefined {
 function closePreview() {
   previewOpen.value = false
   previewUrl.value = null
+}
+
+async function openPublish(ad: Ad) {
+  publishOpen.value = true
+  publishError.value = null
+  publishAdId.value = ad.id
+  publishSelectedIds.value = (ad.integrationInstances ?? []).map((i) => i.id)
+
+  publishLoading.value = true
+  try {
+    const res = await listIntegrationInstances()
+    publishInstances.value = res.instances.filter((i) => i.is_active)
+  } catch (e) {
+    publishError.value = e instanceof Error ? e.message : 'Kunne ikke hente integrationer'
+    publishInstances.value = []
+  } finally {
+    publishLoading.value = false
+  }
+}
+
+function closePublish() {
+  publishOpen.value = false
+  publishError.value = null
+  publishAdId.value = null
+  publishInstances.value = []
+  publishSelectedIds.value = []
+}
+
+async function savePublish() {
+  if (!publishAdId.value) return
+  publishSaving.value = true
+  publishError.value = null
+  try {
+    const uniqueIds = Array.from(new Set(publishSelectedIds.value.map((v) => Number(v))))
+    const res = await updateAdIntegrations(publishAdId.value, uniqueIds)
+
+    const next = [...ads.value]
+    const idx = next.findIndex((a) => a.id === publishAdId.value)
+    if (idx !== -1) {
+      next[idx] = { ...next[idx], ...res.ad }
+      ads.value = next
+    } else {
+      await load()
+    }
+
+    closePublish()
+  } catch (e) {
+    publishError.value = e instanceof Error ? e.message : 'Kunne ikke gemme'
+  } finally {
+    publishSaving.value = false
+  }
 }
 
 async function onDelete(ad: Ad) {

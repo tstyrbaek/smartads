@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
 use App\Http\Controllers\Api\MailController;
+use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\CronQueueController;
@@ -222,9 +223,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/brand', [BrandController::class, 'show']);
         Route::post('/brand', [BrandController::class, 'store']);
 
+        Route::get('/integrations/definitions', [IntegrationController::class, 'definitions']);
+        Route::get('/integrations/instances', [IntegrationController::class, 'instances']);
+        Route::post('/integrations/instances', [IntegrationController::class, 'store']);
+        Route::patch('/integrations/instances/{instance}', [IntegrationController::class, 'update']);
+        Route::delete('/integrations/instances/{instance}', [IntegrationController::class, 'destroy']);
+
         Route::get('/ads', [AdController::class, 'index']);
         Route::post('/ads', [AdController::class, 'store']);
         Route::get('/ads/{id}', [AdController::class, 'show']);
+        Route::get('/ads/{id}/integrations', [AdController::class, 'integrations']);
+        Route::put('/ads/{id}/integrations', [AdController::class, 'updateIntegrations']);
         Route::get('/ads/{id}/image', [AdController::class, 'image']);
         Route::get('/ads/{id}/download', [AdController::class, 'download']);
         Route::delete('/ads/{id}', [AdController::class, 'destroy']);

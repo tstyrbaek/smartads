@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Jobs\GenerateAdImageJob;
 use App\Models\Ad;
 use App\Models\Company;
+use App\Models\IntegrationInstance;
 use App\Services\TokenUsageService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +23,7 @@ class AdController
 
         $ads = Ad::query()
             ->where('company_id', $companyId)
+            ->with('integrationInstances')
             ->orderByDesc('updated_at')
             ->limit(200)
             ->get();
@@ -124,7 +127,7 @@ class AdController
     {
         $companyId = (int) $request->attributes->get('active_company_id');
 
-        $ad = Ad::query()->where('company_id', $companyId)->findOrFail($id);
+        $ad = Ad::query()->where('company_id', $companyId)->with('integrationInstances')->findOrFail($id);
 
         $downloadUrl = null;
         $previewUrl = null;
@@ -143,6 +146,64 @@ class AdController
             'downloadUrl' => $downloadUrl,
             'previewUrl' => $previewUrl,
             'debug' => $debug,
+        ]);
+    }
+
+    public function integrations(Request $request, string $id): JsonResponse
+    {
+        $companyId = (int) $request->attributes->get('active_company_id');
+
+        $ad = Ad::query()->where('company_id', $companyId)->with('integrationInstances')->findOrFail($id);
+
+        return response()->json([
+            'selected_instance_ids' => $ad->integrationInstances->pluck('id')->map(fn ($v) => (int) $v)->values()->all(),
+        ]);
+    }
+
+    public function updateIntegrations(Request $request, string $id): JsonResponse
+    {
+        $companyId = (int) $request->attributes->get('active_company_id');
+
+        $ad = Ad::query()->where('company_id', $companyId)->with('integrationInstances')->findOrFail($id);
+
+        $validated = $request->validate([
+            'instance_ids' => ['nullable', 'array'],
+            'instance_ids.*' => ['integer', 'exists:integration_instances,id'],
+        ]);
+
+        $instanceIds = collect($validated['instance_ids'] ?? [])->map(fn ($v) => (int) $v)->unique()->values()->all();
+
+        if (!empty($instanceIds)) {
+            $count = IntegrationInstance::query()
+                ->where('company_id', $companyId)
+                ->whereIn('id', $instanceIds)
+                ->count();
+
+            if ($count !== count($instanceIds)) {
+                return response()->json(['error' => 'invalid_instance'], 422);
+            }
+        }
+
+        $now = now();
+
+        $existingById = $ad->integrationInstances->keyBy('id');
+
+        $syncData = [];
+        foreach ($instanceIds as $instanceId) {
+            $existingPivotPublishedAt = $existingById->get($instanceId)?->pivot?->published_at;
+            $syncData[$instanceId] = [
+                'status' => 'selected',
+                'published_at' => $existingPivotPublishedAt ?? $now,
+            ];
+        }
+
+        $ad->integrationInstances()->sync($syncData);
+
+        $ad->load('integrationInstances');
+
+        return response()->json([
+            'ok' => true,
+            'ad' => $this->serializeAd($ad),
         ]);
     }
 
@@ -218,6 +279,8 @@ class AdController
 
     private function serializeAd(Ad $ad): array
     {
+        $ad->loadMissing('integrationInstances');
+
         $filePath = null;
         if (is_string($ad->local_file_path) && $ad->local_file_path !== '') {
             $filePath = '/storage/' . ltrim($ad->local_file_path, '/');
@@ -231,6 +294,28 @@ class AdController
             'status' => $ad->status,
             'nanobananaTaskId' => null,
             'localFilePath' => $filePath,
+            'integrationInstances' => $ad->integrationInstances
+                ->map(fn (IntegrationInstance $instance) => [
+                    'id' => (int) $instance->id,
+                    'integration_key' => (string) $instance->integration_key,
+                    'name' => (string) $instance->name,
+                    'is_active' => (bool) $instance->is_active,
+                    'published_at' => (function () use ($instance) {
+                        $publishedAt = $instance->pivot?->published_at;
+                        if ($publishedAt instanceof \DateTimeInterface) {
+                            return Carbon::instance($publishedAt)->toISOString();
+                        }
+                        if (is_string($publishedAt) && $publishedAt !== '') {
+                            try {
+                                return Carbon::parse($publishedAt)->toISOString();
+                            } catch (\Throwable) {
+                                return null;
+                            }
+                        }
+                        return null;
+                    })(),
+                ])
+                ->values(),
             'error' => $ad->error,
             'updatedAt' => $ad->updated_at?->toISOString(),
         ];
