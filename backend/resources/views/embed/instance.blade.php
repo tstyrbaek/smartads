@@ -1,6 +1,6 @@
 <style>
     .smartads-grid{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
-    .smartads-img{display:block;width:auto;height:auto;max-width:none;max-height:none}
+    .smartads-img{display:block;width:auto;height:auto;max-width:none;max-height:none;object-fit:contain}
     .smartads-link{display:inline-block;text-decoration:none}
     .smartads-empty{color:#6b7280;font-size:14px}
 </style>
@@ -29,6 +29,7 @@
                                 @if($w && $h)
                                     width="{{ $w }}"
                                     height="{{ $h }}"
+                                    style="width: {{ $w }}px; height: {{ $h }}px;"
                                 @endif
                             />
                         </a>
@@ -40,6 +41,7 @@
                             @if($w && $h)
                                 width="{{ $w }}"
                                 height="{{ $h }}"
+                                style="width: {{ $w }}px; height: {{ $h }}px;"
                             @endif
                         />
                     @endif
