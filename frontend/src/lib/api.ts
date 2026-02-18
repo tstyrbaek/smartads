@@ -325,6 +325,11 @@ export async function deleteIntegrationInstance(id: number): Promise<void> {
   await apiFetch(`/api/integrations/instances/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
 }
 
+export async function listAllowedAdSizes(): Promise<{ sizes: { width: number; height: number }[] }> {
+  const res = await apiFetch('/api/meta/ad-sizes')
+  return (await res.json()) as { sizes: { width: number; height: number }[] }
+}
+
 export type AdCreateDebug = {
   mode?: string
   prompt?: string

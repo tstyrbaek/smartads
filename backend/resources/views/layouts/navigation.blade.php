@@ -30,7 +30,7 @@
                         </x-nav-link>
 
                         <x-nav-link :href="route('admin.subscription-plans.index')" :active="request()->routeIs('admin.subscription-plans.*')">
-                            Subscription Plans
+                            Plans
                         </x-nav-link>
 
                         <x-nav-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\IntegrationDefinition;
 use App\Models\IntegrationInstance;
+use App\Services\AdSizeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -58,6 +59,18 @@ class IntegrationController extends Controller
             if ($token === '') {
                 $config['embed_token'] = Str::random(48);
             }
+
+            $w = isset($config['ad_width']) && is_numeric($config['ad_width']) ? (int) $config['ad_width'] : null;
+            $h = isset($config['ad_height']) && is_numeric($config['ad_height']) ? (int) $config['ad_height'] : null;
+            if (($w && !$h) || (!$w && $h)) {
+                return response()->json(['error' => 'invalid_ad_size'], 422);
+            }
+            if ($w && $h) {
+                $sizeService = app(AdSizeService::class);
+                if (!$sizeService->isAllowed($w, $h)) {
+                    return response()->json(['error' => 'invalid_ad_size', 'allowed_sizes' => $sizeService->allowedSizes()], 422);
+                }
+            }
         }
 
         $instance = IntegrationInstance::query()->create([
@@ -100,6 +113,18 @@ class IntegrationController extends Controller
             $incomingToken = (string) ($config['embed_token'] ?? '');
             if ($incomingToken === '' && $currentToken !== '') {
                 $config['embed_token'] = $currentToken;
+            }
+
+            $w = isset($config['ad_width']) && is_numeric($config['ad_width']) ? (int) $config['ad_width'] : null;
+            $h = isset($config['ad_height']) && is_numeric($config['ad_height']) ? (int) $config['ad_height'] : null;
+            if (($w && !$h) || (!$w && $h)) {
+                return response()->json(['error' => 'invalid_ad_size'], 422);
+            }
+            if ($w && $h) {
+                $sizeService = app(AdSizeService::class);
+                if (!$sizeService->isAllowed($w, $h)) {
+                    return response()->json(['error' => 'invalid_ad_size', 'allowed_sizes' => $sizeService->allowedSizes()], 422);
+                }
             }
         }
 

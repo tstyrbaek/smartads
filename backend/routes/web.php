@@ -127,10 +127,13 @@ Route::get('/cron/queue', [CronQueueController::class, 'run']);
 Route::get('/embed/{instance}/script.js', [PublicEmbedController::class, 'script'])->name('embed.script');
 Route::get('/embed/{instance}/render', [PublicEmbedController::class, 'render'])->name('embed.render');
 
+Route::get('/network-embed/{publicId}/script.js', [PublicEmbedController::class, 'networkScript'])->name('network-embed.script');
+Route::get('/network-embed/{publicId}/render', [PublicEmbedController::class, 'networkRender'])->name('network-embed.render');
+
 Route::get('/', function () {
     return response()->file(public_path('app/index.html'));
 });
 
 Route::get('/{any}', function () {
     return response()->file(public_path('app/index.html'));
-})->where('any', '^(?!api|storage|sanctum|admin|embed).*$');
+})->where('any', '^(?!api|storage|sanctum|admin|embed|network-embed).*$');

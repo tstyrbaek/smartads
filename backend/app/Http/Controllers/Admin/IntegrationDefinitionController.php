@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\IntegrationDefinition;
 use App\Models\IntegrationInstance;
+use App\Services\AdSizeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -44,9 +46,27 @@ class IntegrationDefinitionController extends Controller
             ->where('integration_key', $definition->key)
             ->count();
 
+        $embedPublicId = null;
+        if ((string) $definition->type === 'network_website_embed') {
+            $embedPublicId = is_array($definition->capabilities)
+                ? (string) ($definition->capabilities['embed_public_id'] ?? '')
+                : '';
+            if ($embedPublicId === '') {
+                $embedPublicId = null;
+            }
+        }
+
+        $embedCode = null;
+        if ($embedPublicId) {
+            $scriptUrl = url('/network-embed/' . $embedPublicId . '/script.js');
+            $embedCode = '<script src="' . $scriptUrl . '"></' . 'script>';
+        }
+
         return view('admin.integration-definitions.edit', [
             'definition' => $definition,
             'inUseCount' => $inUseCount,
+            'embedPublicId' => $embedPublicId,
+            'embedCode' => $embedCode,
         ]);
     }
 
@@ -104,6 +124,28 @@ class IntegrationDefinitionController extends Controller
                 return ['capabilities_error' => 'Capabilities skal være gyldig JSON (array).'];
             }
             $capabilities = $decoded;
+        }
+
+        if ((string) $validated['type'] === 'network_website_embed') {
+            if (!is_array($capabilities)) {
+                $capabilities = [];
+            }
+            $publicId = (string) ($capabilities['embed_public_id'] ?? '');
+            if ($publicId === '' || !Str::isUuid($publicId)) {
+                $capabilities['embed_public_id'] = (string) Str::uuid();
+            }
+
+            $w = isset($capabilities['ad_width']) && is_numeric($capabilities['ad_width']) ? (int) $capabilities['ad_width'] : null;
+            $h = isset($capabilities['ad_height']) && is_numeric($capabilities['ad_height']) ? (int) $capabilities['ad_height'] : null;
+            if (($w && !$h) || (!$w && $h)) {
+                return ['capabilities_error' => 'Annonceformat skal have både bredde og højde.'];
+            }
+            if ($w && $h) {
+                $sizeService = app(AdSizeService::class);
+                if (!$sizeService->isAllowed($w, $h)) {
+                    return ['capabilities_error' => 'Annonceformat er ikke tilladt.'];
+                }
+            }
         }
 
         return [

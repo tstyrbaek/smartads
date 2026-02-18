@@ -36,6 +36,23 @@
 
                     </form>
 
+                    @if(($definition->type ?? '') === 'network_website_embed')
+                        <div class="mt-8 rounded-lg border bg-gray-50 p-4">
+                            <div class="text-sm font-semibold text-gray-900">Network embed</div>
+                            <p class="mt-1 text-xs text-gray-600">Brug embed-koden på netværkets website. Viser alle annoncer der er udgivet til denne integration.</p>
+
+                            <div class="mt-4 grid gap-2">
+                                <label class="text-sm font-medium" for="embedPublicId">Public ID (UUID)</label>
+                                <input id="embedPublicId" readonly value="{{ (string) ($embedPublicId ?? '') }}" class="w-full rounded border px-3 py-2 font-mono text-xs" />
+                            </div>
+
+                            <div class="mt-4 grid gap-2">
+                                <label class="text-sm font-medium" for="embedCode">Embed-kode</label>
+                                <textarea id="embedCode" readonly class="min-h-16 w-full rounded border px-3 py-2 font-mono text-xs">{{ (string) ($embedCode ?? '') }}</textarea>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="mt-6 flex justify-end">
                         <form method="POST" action="{{ route('admin.integration-definitions.destroy', $definition) }}" onsubmit="return confirm('Er du sikker?')">
                             @csrf

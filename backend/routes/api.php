@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
+use App\Http\Controllers\Api\MetaController;
 use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\NotificationController;
@@ -220,6 +221,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('api.company')->group(function () {
+        Route::get('/meta/ad-sizes', [MetaController::class, 'adSizes']);
+
         Route::get('/brand', [BrandController::class, 'show']);
         Route::post('/brand', [BrandController::class, 'store']);
 

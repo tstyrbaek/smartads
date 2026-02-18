@@ -217,6 +217,17 @@
               </div>
 
               <div class="grid gap-2">
+                <label class="text-sm font-medium" for="embedAdSize">Annonceformat</label>
+                <select id="embedAdSize" v-model="integrationForm.adSize" class="w-full rounded border px-3 py-2">
+                  <option value="">Ingen krav</option>
+                  <option v-for="s in allowedAdSizes" :key="`${s.width}x${s.height}`" :value="`${s.width}x${s.height}`">
+                    {{ s.width }}×{{ s.height }}
+                  </option>
+                </select>
+                <p class="text-xs text-gray-600">Hvis du vælger en størrelse, kan kun annoncer i den størrelse udgives til integrationen.</p>
+              </div>
+
+              <div class="grid gap-2">
                 <label class="text-sm font-medium" for="embedToken">Embed token</label>
                 <input id="embedToken" v-model="integrationForm.embedToken" class="w-full rounded border px-3 py-2 font-mono text-xs" />
               </div>
@@ -438,6 +449,7 @@ import {
   createIntegrationInstance,
   deleteIntegrationInstance,
   getBrand,
+  listAllowedAdSizes,
   getSubscription,
   getTokensSummary,
   listIntegrationDefinitions,
@@ -477,14 +489,26 @@ const integrationDefinitions = ref<IntegrationDefinition[]>([])
 const integrationInstances = ref<IntegrationInstance[]>([])
 const integrationFormSaving = ref(false)
 
-const integrationForm = ref({
+const allowedAdSizes = ref<{ width: number; height: number }[]>([])
+
+const integrationForm = ref<{
+  open: boolean
+  mode: 'create' | 'edit'
+  id: number | null
+  integrationKey: string
+  name: string
+  isActive: boolean
+  embedToken: string
+  adSize: string
+}>({
   open: false,
-  mode: 'create' as 'create' | 'edit',
-  id: null as number | null,
+  mode: 'create',
+  id: null,
   integrationKey: 'website_embed',
   name: '',
   isActive: true,
   embedToken: '',
+  adSize: '',
 })
 
 function onFile(e: Event) {
@@ -528,6 +552,10 @@ async function loadIntegrations() {
     ])
     integrationDefinitions.value = defs.definitions
     integrationInstances.value = inst.instances
+
+    const sizes = await listAllowedAdSizes()
+    allowedAdSizes.value = Array.isArray(sizes.sizes) ? sizes.sizes : []
+
     if (integrationDefinitions.value.length > 0 && !integrationDefinitions.value.some((d) => d.key === integrationForm.value.integrationKey)) {
       integrationForm.value.integrationKey = integrationDefinitions.value[0].key
     }
@@ -545,6 +573,7 @@ function startCreateIntegration() {
   integrationForm.value.name = ''
   integrationForm.value.isActive = true
   integrationForm.value.embedToken = ''
+  integrationForm.value.adSize = ''
 
   if (integrationDefinitions.value.length > 0) {
     integrationForm.value.integrationKey = integrationDefinitions.value[0].key
@@ -561,6 +590,11 @@ function startEditIntegration(inst: IntegrationInstance) {
   integrationForm.value.name = inst.name
   integrationForm.value.isActive = inst.is_active
   integrationForm.value.embedToken = String(inst.config?.embed_token ?? '')
+  const w = inst.config?.ad_width
+  const h = inst.config?.ad_height
+  const wNum = w && !isNaN(Number(w)) ? String(parseInt(String(w), 10)) : ''
+  const hNum = h && !isNaN(Number(h)) ? String(parseInt(String(h), 10)) : ''
+  integrationForm.value.adSize = wNum && hNum ? `${wNum}x${hNum}` : ''
 }
 
 function closeIntegrationForm() {
@@ -582,7 +616,11 @@ async function saveIntegration() {
       is_active: integrationForm.value.isActive,
       config:
         integrationForm.value.integrationKey === 'website_embed'
-          ? { embed_token: integrationForm.value.embedToken || null }
+          ? {
+              embed_token: integrationForm.value.embedToken || null,
+              ad_width: integrationForm.value.adSize ? Number(String(integrationForm.value.adSize).split('x')[0]) : null,
+              ad_height: integrationForm.value.adSize ? Number(String(integrationForm.value.adSize).split('x')[1]) : null,
+            }
           : null,
     }
 

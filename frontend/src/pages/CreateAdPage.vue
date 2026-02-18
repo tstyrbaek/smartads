@@ -158,14 +158,14 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { createAd, getAd, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
+import { createAd, getAd, listAllowedAdSizes, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
 import SpeechToTextButton from '../components/SpeechToTextButton.vue'
 
 const router = useRouter()
 
 const text = ref('')
 const instructions = ref('')
-const sizePreset = ref('square_800')
+const sizePreset = ref('')
 const imageWidth = ref(800)
 const imageHeight = ref(800)
 const creating = ref(false)
@@ -187,27 +187,41 @@ type SelectedImageItem = { id: string; file: File; url: string }
 const selectedImageItems = ref<SelectedImageItem[]>([])
 const dragSourceId = ref<string | null>(null)
 
-type SizePresetOption = { value: string; label: string; width: number | null; height: number | null }
+type SizePresetOption = { value: string; label: string; width: number; height: number }
 
-const sizePresetOptions: SizePresetOption[] = [
-  { value: 'square_800', label: 'Kvadrat (800×800)', width: 800, height: 800 },
-  { value: 'square_1080', label: 'Kvadrat (1080×1080)', width: 1080, height: 1080 },
-  { value: 'social_4_5', label: 'SoMe (1080×1350)', width: 1080, height: 1350 },
-  { value: 'banner_16_9', label: 'Banner (1200×628)', width: 1200, height: 628 },
-]
+const sizePresetOptions = ref<SizePresetOption[]>([])
 
 watch(
   sizePreset,
   (val) => {
-    const preset = sizePresetOptions.find((x) => x.value === val)
+    const preset = sizePresetOptions.value.find((x) => x.value === val)
     if (!preset) return
-    if (preset.width && preset.height) {
-      imageWidth.value = preset.width
-      imageHeight.value = preset.height
-    }
+    imageWidth.value = preset.width
+    imageHeight.value = preset.height
   },
   { immediate: true },
 )
+
+async function loadAllowedSizes() {
+  const res = await listAllowedAdSizes()
+  const opts = (res.sizes ?? []).map((s) => {
+    const w = Number(s.width)
+    const h = Number(s.height)
+    return {
+      value: `${w}x${h}`,
+      label: `${w}×${h}`,
+      width: w,
+      height: h,
+    }
+  })
+  sizePresetOptions.value = opts
+
+  const current = String(sizePreset.value || '')
+  const exists = opts.some((o) => o.value === current)
+  if (!exists && opts.length > 0) {
+    sizePreset.value = opts[0].value
+  }
+}
 
 function onImages(e: Event) {
   const input = e.target as HTMLInputElement
@@ -277,6 +291,8 @@ const canCreateAd = computed(() => {
 })
 
 let pollTimer: number | null = null
+
+loadAllowedSizes()
 
 function clearPoll() {
   if (pollTimer) {

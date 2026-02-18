@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Jobs\GenerateAdImageJob;
 use App\Models\Ad;
 use App\Models\Company;
+use App\Models\IntegrationDefinition;
 use App\Models\IntegrationInstance;
+use App\Services\AdSizeService;
 use App\Services\TokenUsageService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -74,6 +76,17 @@ class AdController
             return response()->json(['error' => 'brand_logo_missing'], 400);
         }
 
+        $imageWidth = isset($validated['image_width']) && is_numeric($validated['image_width']) ? (int) $validated['image_width'] : 800;
+        $imageHeight = isset($validated['image_height']) && is_numeric($validated['image_height']) ? (int) $validated['image_height'] : 800;
+
+        $sizeService = app(AdSizeService::class);
+        if (!$sizeService->isAllowed($imageWidth, $imageHeight)) {
+            return response()->json([
+                'error' => 'invalid_ad_size',
+                'allowed_sizes' => $sizeService->allowedSizes(),
+            ], 422);
+        }
+
         $id = (string) Str::ulid();
         $datePart = now()->format('ymd');
         $shortId = substr($id, -6);
@@ -107,8 +120,8 @@ class AdController
             'title' => $title,
             'text' => (string) $validated['text'],
             'instructions' => isset($validated['instructions']) ? (string) $validated['instructions'] : null,
-            'image_width' => isset($validated['image_width']) && is_numeric($validated['image_width']) ? (int) $validated['image_width'] : 800,
-            'image_height' => isset($validated['image_height']) && is_numeric($validated['image_height']) ? (int) $validated['image_height'] : 800,
+            'image_width' => $imageWidth,
+            'image_height' => $imageHeight,
             'status' => 'generating',
             'input_image_paths' => $imagePaths,
         ]);
@@ -178,13 +191,65 @@ class AdController
         $instanceIds = collect($validated['instance_ids'] ?? [])->map(fn ($v) => (int) $v)->unique()->values()->all();
 
         if (!empty($instanceIds)) {
-            $count = IntegrationInstance::query()
+            $instances = IntegrationInstance::query()
                 ->where('company_id', $companyId)
                 ->whereIn('id', $instanceIds)
-                ->count();
+                ->get();
 
-            if ($count !== count($instanceIds)) {
+            if ($instances->count() !== count($instanceIds)) {
                 return response()->json(['error' => 'invalid_instance'], 422);
+            }
+
+            $definitionByKey = IntegrationDefinition::query()
+                ->whereIn('key', $instances->pluck('integration_key')->unique()->values()->all())
+                ->where('is_active', true)
+                ->get()
+                ->keyBy('key');
+
+            foreach ($instances as $instance) {
+                $expectedW = null;
+                $expectedH = null;
+
+                if ((string) $instance->integration_key === 'website_embed') {
+                    $config = is_array($instance->config) ? $instance->config : [];
+                    $expectedW = isset($config['ad_width']) && is_numeric($config['ad_width']) ? (int) $config['ad_width'] : null;
+                    $expectedH = isset($config['ad_height']) && is_numeric($config['ad_height']) ? (int) $config['ad_height'] : null;
+                } else {
+                    $definition = $definitionByKey->get((string) $instance->integration_key);
+                    if (!$definition) {
+                        continue;
+                    }
+
+                    $caps = is_array($definition->capabilities) ? $definition->capabilities : [];
+                    $expectedW = isset($caps['ad_width']) && is_numeric($caps['ad_width']) ? (int) $caps['ad_width'] : null;
+                    $expectedH = isset($caps['ad_height']) && is_numeric($caps['ad_height']) ? (int) $caps['ad_height'] : null;
+
+                    if ($expectedW && $expectedH) {
+                        $sizeService = app(AdSizeService::class);
+                        if (!$sizeService->isAllowed($expectedW, $expectedH)) {
+                            return response()->json([
+                                'error' => 'invalid_integration_ad_size',
+                                'allowed_sizes' => $sizeService->allowedSizes(),
+                            ], 422);
+                        }
+                    }
+                }
+
+                if (!$expectedW || !$expectedH) {
+                    continue;
+                }
+
+                $actualW = is_numeric($ad->image_width) ? (int) $ad->image_width : null;
+                $actualH = is_numeric($ad->image_height) ? (int) $ad->image_height : null;
+
+                if (!$actualW || !$actualH || $actualW !== $expectedW || $actualH !== $expectedH) {
+                    return response()->json([
+                        'error' => 'invalid_ad_size',
+                        'integration_instance_id' => (int) $instance->id,
+                        'expected' => ['width' => $expectedW, 'height' => $expectedH],
+                        'actual' => ['width' => $actualW, 'height' => $actualH],
+                    ], 422);
+                }
             }
         }
 
