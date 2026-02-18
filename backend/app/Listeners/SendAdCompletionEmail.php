@@ -50,7 +50,10 @@ class SendAdCompletionEmail implements ShouldQueue
             ];
 
             if ($event->status === 'success' && $event->localFilePath) {
-                $variables['image_url'] = url($event->localFilePath);
+                $relativePath = preg_replace('#^/storage/#', '', (string) $event->localFilePath);
+                $relativePath = ltrim((string) $relativePath, '/');
+                $publicPath = '/storage/' . $relativePath;
+                $variables['image_url'] = secure_url($publicPath);
             }
 
             if ($event->status === 'failed') {
