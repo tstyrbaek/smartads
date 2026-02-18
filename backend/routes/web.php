@@ -128,9 +128,9 @@ Route::get('/embed/{instance}/script.js', [PublicEmbedController::class, 'script
 Route::get('/embed/{instance}/render', [PublicEmbedController::class, 'render'])->name('embed.render');
 
 Route::get('/', function () {
-    return response()->file(public_path('index.html'));
+    return response()->file(public_path('app/index.html'));
 });
 
 Route::get('/{any}', function () {
-    return response()->file(public_path('index.html'));
-})->where('any', '^(?!api|storage|sanctum|admin).*$');
+    return response()->file(public_path('app/index.html'));
+})->where('any', '^(?!api|storage|sanctum|admin|embed).*$');

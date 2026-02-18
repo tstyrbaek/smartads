@@ -3,10 +3,10 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/',
+  base: '/app/',
   build: {
-    outDir: '../backend/public',
-    emptyOutDir: false,
+    outDir: '../backend/public/app',
+    emptyOutDir: true,
   },
   server: {
     port: 5174,
