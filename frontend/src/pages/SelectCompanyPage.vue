@@ -3,35 +3,34 @@
     <h1 class="text-xl font-semibold">Vælg company</h1>
     <p class="mt-1 text-sm text-gray-600">Du har adgang til flere companies. Vælg hvilket du vil arbejde i.</p>
 
-    <form class="mt-6 grid gap-6" @submit.prevent="onSubmit">
+    <div class="mt-6 grid gap-6">
       <div class="grid gap-3">
-        <label
+        <button
           v-for="c in companies"
           :key="c.id"
-          class="flex cursor-pointer items-center gap-4 rounded-lg border p-2 has-[:checked]:border-green-600 has-[:checked]:bg-green-50"
+          class="flex w-full items-center gap-4 rounded-lg border p-2 text-left hover:border-green-600 hover:bg-green-50"
+          :class="companyId === c.id ? 'border-green-600 bg-green-50' : ''"
+          type="button"
+          @click="selectCompany(c.id)"
         >
           <img
-            v-if="c.logo_path"
+            v-if="c.logo_path && !failedLogoCompanyIds.has(c.id)"
             :src="toAbsoluteBackendUrl(c.logo_path)"
             class="h-16 w-16 rounded-full object-contain"
+            @error="onLogoError(c.id)"
           />
-          <div v-else class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-sm">?</div>
+          <div
+            v-else
+            class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600"
+          >
+            {{ (c.name || '?').trim().slice(0, 2).toUpperCase() }}
+          </div>
           <div class="font-medium">{{ c.name }}</div>
-          <input type="radio" v-model.number="companyId" :value="c.id" class="ml-auto" />
-        </label>
+        </button>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button
-          class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
-          type="submit"
-          :disabled="!companyId"
-        >
-          Continue
-        </button>
-        <div v-if="message" class="text-sm text-gray-700">{{ message }}</div>
-      </div>
-    </form>
+      <div v-if="message" class="text-sm text-gray-700">{{ message }}</div>
+    </div>
   </div>
 </template>
 
@@ -45,6 +44,13 @@ const router = useRouter()
 const companies = ref<MeResponse['companies']>([])
 const companyId = ref<number | null>(null)
 const message = ref<string | null>(null)
+const selecting = ref(false)
+
+const failedLogoCompanyIds = ref<Set<number>>(new Set())
+
+function onLogoError(companyId: number) {
+  failedLogoCompanyIds.value = new Set([...failedLogoCompanyIds.value, companyId])
+}
 
 async function load() {
   const me = await getMe()
@@ -61,14 +67,21 @@ async function load() {
   companyId.value = me.companies[0]?.id ?? null
 }
 
-async function onSubmit() {
-  if (!companyId.value) {
-    message.value = 'Vælg et company'
-    return
-  }
+async function selectCompany(id: number) {
+  if (selecting.value) return
 
-  setActiveCompanyId(companyId.value)
-  await router.replace('/')
+  selecting.value = true
+  message.value = null
+  companyId.value = id
+
+  try {
+    setActiveCompanyId(id)
+    await router.replace('/')
+  } catch (e) {
+    message.value = e instanceof Error ? e.message : 'Kunne ikke vælge company'
+  } finally {
+    selecting.value = false
+  }
 }
 
 onMounted(() => {

@@ -60,7 +60,10 @@ class SendAdCompletionEmail implements ShouldQueue
             // Prepare attachments for successful ads
             $attachments = [];
             if ($event->status === 'success' && $event->localFilePath) {
-                $fullPath = Storage::disk('public')->path($event->localFilePath);
+                $relativePath = preg_replace('#^/storage/#', '', (string) $event->localFilePath);
+                $relativePath = ltrim((string) $relativePath, '/');
+
+                $fullPath = Storage::disk('public')->path($relativePath);
                 if (file_exists($fullPath)) {
                     $attachments[] = $fullPath;
                 }

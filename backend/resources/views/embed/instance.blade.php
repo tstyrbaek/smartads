@@ -1,11 +1,8 @@
 <style>
-    .smartads-grid{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Noto Sans","Liberation Sans",sans-serif;display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
-    @media (min-width: 640px){.smartads-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-    @media (min-width: 1024px){.smartads-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
-    .smartads-card{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff}
-    .smartads-img{width:100%;height:auto;display:block}
-    .smartads-link{display:block;text-decoration:none}
-    .smartads-empty{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Noto Sans","Liberation Sans",sans-serif;color:#6b7280;font-size:14px}
+    .smartads-grid{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+    .smartads-img{display:block;width:auto;height:auto;max-width:none;max-height:none}
+    .smartads-link{display:inline-block;text-decoration:none}
+    .smartads-empty{color:#6b7280;font-size:14px}
 </style>
 
     @php
@@ -18,15 +15,34 @@
         <div class="smartads-grid">
             @foreach($ads as $ad)
                 @if (is_string($ad->local_file_path) && $ad->local_file_path !== '')
-                    <div class="smartads-card">
-                        @if($websiteUrl !== '')
-                            <a class="smartads-link" href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer">
-                                <img class="smartads-img" src="{{ asset('storage/' . $ad->local_file_path) }}" alt="Annonce" />
-                            </a>
-                        @else
-                            <img class="smartads-img" src="{{ asset('storage/' . $ad->local_file_path) }}" alt="Annonce" />
-                        @endif
-                    </div>
+                    @php
+                        $w = is_numeric($ad->image_width) ? (int) $ad->image_width : null;
+                        $h = is_numeric($ad->image_height) ? (int) $ad->image_height : null;
+                    @endphp
+
+                    @if($websiteUrl !== '')
+                        <a class="smartads-link" href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer">
+                            <img
+                                class="smartads-img"
+                                src="{{ asset('storage/' . $ad->local_file_path) }}"
+                                alt="Annonce"
+                                @if($w && $h)
+                                    width="{{ $w }}"
+                                    height="{{ $h }}"
+                                @endif
+                            />
+                        </a>
+                    @else
+                        <img
+                            class="smartads-img"
+                            src="{{ asset('storage/' . $ad->local_file_path) }}"
+                            alt="Annonce"
+                            @if($w && $h)
+                                width="{{ $w }}"
+                                height="{{ $h }}"
+                            @endif
+                        />
+                    @endif
                 @endif
             @endforeach
         </div>

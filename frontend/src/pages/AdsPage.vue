@@ -36,7 +36,7 @@
 
       <div v-else-if="ads.length === 0" class="px-4 py-6 text-sm text-gray-700">Ingen annoncer endnu.</div>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div v-else class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 md:grid-cols-3">
         <div v-for="ad in ads" :key="ad.id" class="overflow-hidden rounded-lg border bg-white shadow-sm">
           <div class="w-full bg-gray-100 relative">
               <img
