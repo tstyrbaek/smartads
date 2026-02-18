@@ -32,7 +32,7 @@ php artisan event:cache
 
 echo "📦 Bygger frontend assets..."
 cd ../frontend
-npm ci --production
+npm ci
 npm run build
 
 echo "🔄 Genstarter queue worker..."

@@ -9,7 +9,7 @@ class CronQueueController extends Controller
 {
     public function run(Request $request)
     {
-        $expected = (string) env('CRON_QUEUE_TOKEN', '');
+        $expected = (string) config('smartads.cron_queue_token', '');
         $provided = (string) $request->query('token', '');
 
         if ($expected === '' || !hash_equals($expected, $provided)) {
