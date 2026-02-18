@@ -42,6 +42,7 @@ backend/storage/logs
 backend/storage/pail
 backend/storage/framework
 backend/storage/app
+backend/public/app/
 
 # Vue Frontend
 frontend/node_modules/
