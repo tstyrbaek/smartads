@@ -16,12 +16,12 @@
           <img
             v-if="c.logo_path && !failedLogoCompanyIds.has(c.id)"
             :src="toAbsoluteBackendUrl(c.logo_path)"
-            class="h-16 w-16 rounded-full object-contain"
+            class="h-8 w-16 rounded-full object-contain"
             @error="onLogoError(c.id)"
           />
           <div
             v-else
-            class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600"
+            class="flex h-8 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600"
           >
             {{ (c.name || '?').trim().slice(0, 2).toUpperCase() }}
           </div>
