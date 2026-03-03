@@ -76,6 +76,10 @@ class IntegrationDefinitionController extends Controller
             ->where('integration_key', $definition->key)
             ->count();
 
+        if ((string) $definition->type === 'network_website_embed' && $request->filled('key') && (string) $request->input('key') !== (string) $definition->key) {
+            return redirect()->back()->withInput()->with('error', 'Key kan ikke ændres for network website embed.');
+        }
+
         if ($inUseCount > 0 && $request->filled('key') && (string) $request->input('key') !== (string) $definition->key) {
             return redirect()->back()->withInput()->with('error', 'Key kan ikke ændres, når integrationstypen er i brug.');
         }
@@ -107,6 +111,16 @@ class IntegrationDefinitionController extends Controller
 
     private function validateDefinition(Request $request, ?IntegrationDefinition $definition = null): array
     {
+        $incomingType = (string) $request->input('type', '');
+        $incomingKey = (string) $request->input('key', '');
+        if (!$definition && $incomingType === 'network_website_embed' && (trim($incomingKey) === '' || trim($incomingKey) === 'network_website_embed')) {
+            do {
+                $candidate = 'network_website_embed_' . Str::lower(Str::random(6));
+                $exists = IntegrationDefinition::query()->where('key', $candidate)->exists();
+            } while ($exists);
+            $request->merge(['key' => $candidate]);
+        }
+
         $validated = $request->validate([
             'key' => ['required', 'string', 'max:255', Rule::unique('integration_definitions', 'key')->ignore($definition?->id)],
             'type' => ['required', 'string', 'max:255'],

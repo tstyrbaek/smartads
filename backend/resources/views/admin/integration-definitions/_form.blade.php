@@ -8,6 +8,7 @@
             value="{{ old('key', $definition->key) }}"
             required
             data-in-use="{{ (($inUseCount ?? 0) > 0) ? '1' : '0' }}"
+            data-existing="{{ $definition->id ? '1' : '0' }}"
             @readonly(($inUseCount ?? 0) > 0)
             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ (($inUseCount ?? 0) > 0) ? 'bg-gray-50 opacity-50 cursor-not-allowed' : '' }}"
         />
@@ -112,18 +113,37 @@
     if (!typeEl || !keyEl) return
 
     var inUse = String(keyEl.getAttribute('data-in-use') || '') === '1'
+    var isExisting = String(keyEl.getAttribute('data-existing') || '') === '1'
+
+    function randomSuffix(len) {
+      var chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+      var out = ''
+      for (var i = 0; i < len; i++) {
+        out += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      return out
+    }
 
     function applyNetworkKeyLock() {
-      if (inUse) return
-
       var type = String(typeEl.value || '')
       if (type === 'network_website_embed') {
-        keyEl.value = 'network_website_embed'
-        keyEl.setAttribute('readonly', 'readonly')
-        keyEl.classList.add('bg-gray-50')
+        var current = String(keyEl.value || '').trim()
+        if (current === '' || current === 'network_website_embed') {
+          keyEl.value = 'network_website_embed_' + randomSuffix(6)
+        }
+
+        if (inUse || isExisting) {
+          keyEl.setAttribute('readonly', 'readonly')
+          keyEl.classList.add('bg-gray-50')
+        } else {
+          keyEl.removeAttribute('readonly')
+          keyEl.classList.remove('bg-gray-50')
+        }
       } else {
-        keyEl.removeAttribute('readonly')
-        keyEl.classList.remove('bg-gray-50')
+        if (!inUse) {
+          keyEl.removeAttribute('readonly')
+          keyEl.classList.remove('bg-gray-50')
+        }
       }
     }
 
