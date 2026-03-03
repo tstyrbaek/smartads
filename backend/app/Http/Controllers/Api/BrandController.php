@@ -31,6 +31,7 @@ class BrandController extends Controller
             'primaryColor3' => $brand?->color_3,
             'primaryColor4' => $brand?->color_4,
             'logoPath' => $brand?->logo_path ? '/storage/' . $brand->logo_path : null,
+            'templatePath' => $brand?->template_path ? '/storage/' . $brand->template_path : null,
             'fonts' => $brand?->fonts,
             'slogan' => $brand?->slogan,
             'visual_guidelines' => $brand?->visual_guidelines,
@@ -55,6 +56,7 @@ class BrandController extends Controller
             'slogan' => ['nullable', 'string', 'max:255'],
             'visual_guidelines' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
+            'template' => ['nullable', 'file', 'max:8192', 'mimes:png,jpg,jpeg,webp,pdf'],
         ]);
 
         $company = Company::query()->find($companyId);
@@ -94,6 +96,16 @@ class BrandController extends Controller
             ]);
         }
 
+        if ($request->hasFile('template')) {
+            if ($brand->template_path) {
+                Storage::disk('public')->delete($brand->template_path);
+            }
+
+            $brand->forceFill([
+                'template_path' => Storage::disk('public')->putFile('brand-templates', $request->file('template')),
+            ]);
+        }
+
         $brand->save();
 
         return response()->json([
@@ -106,6 +118,7 @@ class BrandController extends Controller
             'primaryColor3' => $brand->color_3,
             'primaryColor4' => $brand->color_4,
             'logoPath' => $brand->logo_path ? '/storage/' . $brand->logo_path : null,
+            'templatePath' => $brand->template_path ? '/storage/' . $brand->template_path : null,
             'fonts' => $brand->fonts,
             'slogan' => $brand->slogan,
             'visual_guidelines' => $brand->visual_guidelines,

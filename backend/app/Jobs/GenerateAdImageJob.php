@@ -90,6 +90,8 @@ class GenerateAdImageJob implements ShouldQueue
             return;
         }
 
+        $templatePath = $brand?->template_path;
+
         $apiKey = (string) config('services.gemini.api_key');
         if ($apiKey === '') {
             $ad->forceFill([
@@ -137,6 +139,9 @@ class GenerateAdImageJob implements ShouldQueue
         $prompt .= "Company description: {$company->company_description}.\n";
         $prompt .= "Target audience: {$company->target_audience_description}.\n";
         $prompt .= "Logo: Use the provided reference logo image (do not invent a new logo). Include EXACTLY ONE logo in the design. Do not duplicate the logo elsewhere.\n";
+        if (is_string($templatePath) && trim($templatePath) !== '') {
+            $prompt .= "Style reference: A design template image is provided as a reference. Use it ONLY for visual style (layout, spacing, typography style, font usage and color usage). Do NOT copy any text, photos, or specific objects from the template.\n";
+        }
         $prompt .= "The ad text must be clearly readable and spelled correctly, and MUST appear EXACTLY as written (do not change wording, spelling):\n\"{$ad->text}\"\n";
         if ($instructions !== '') {
             $prompt .= "User instructions (follow these while keeping the ad text EXACTLY as written):\n{$instructions}\n";
@@ -163,6 +168,25 @@ class GenerateAdImageJob implements ShouldQueue
             'mimeType' => $logoMime,
             'data' => base64_encode($logoBin),
         ];
+
+        if (is_string($templatePath) && trim($templatePath) !== '' && Storage::disk('public')->exists($templatePath)) {
+            $templateExt = strtolower((string) pathinfo($templatePath, PATHINFO_EXTENSION));
+            $templateMime = match ($templateExt) {
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'webp' => 'image/webp',
+                default => 'application/octet-stream',
+            };
+            if (in_array($templateMime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
+                $templateBin = Storage::disk('public')->get($templatePath);
+                if ($templateBin !== '') {
+                    $referenceImages[] = [
+                        'mimeType' => $templateMime,
+                        'data' => base64_encode($templateBin),
+                    ];
+                }
+            }
+        }
 
         $inputImagePaths = is_array($ad->input_image_paths) ? $ad->input_image_paths : [];
         $productCount = 0;

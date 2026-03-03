@@ -11,6 +11,7 @@ class Brand extends Model
         'company_id',
         'name',
         'logo_path',
+        'template_path',
         'color_1',
         'color_2',
         'color_3',

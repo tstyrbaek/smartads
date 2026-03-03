@@ -107,6 +107,13 @@
         </div>
 
         <div class="grid gap-2">
+          <label class="text-sm font-medium" for="template">Design template (png/jpg/webp/pdf)</label>
+          <input id="template" class="w-full" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" @change="onTemplateFile" />
+          <p class="text-xs text-gray-600">Upload en reference til designstil (farver/typografi/layout). Bruges som stil-reference af AI'en.</p>
+          <a v-if="templateUrl" class="text-xs text-blue-700 hover:underline" :href="templateUrl" target="_blank" rel="noreferrer">Se nuværende template</a>
+        </div>
+
+        <div class="grid gap-2">
           <label class="text-sm font-medium" for="fonts">Skrifttyper</label>
           <input
             id="fonts"
@@ -477,6 +484,8 @@ const state = ref({
 
 const logoFile = ref<File | null>(null)
 const logoUrl = ref<string | null>(null)
+const templateFile = ref<File | null>(null)
+const templateUrl = ref<string | null>(null)
 const saving = ref(false)
 const message = ref<string | null>(null)
 
@@ -517,6 +526,12 @@ function onFile(e: Event) {
   logoFile.value = file
 }
 
+function onTemplateFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  templateFile.value = file
+}
+
 async function load() {
   const [brand, subscriptionResponse, tokensSummaryResponse] = await Promise.all([
     getBrand(),
@@ -535,6 +550,7 @@ async function load() {
   state.value.slogan = brand.slogan ?? ''
   state.value.visual_guidelines = brand.visual_guidelines ?? ''
   logoUrl.value = brand.logoPath ? toAbsoluteBackendUrl(brand.logoPath) : null
+  templateUrl.value = brand.templatePath ? toAbsoluteBackendUrl(brand.templatePath) : null
 
   subscriptionStatus.value = subscriptionResponse.subscription
   tokensSummary.value = tokensSummaryResponse
@@ -679,8 +695,13 @@ async function onSubmit() {
       form.set('logo', logoFile.value)
     }
 
+    if (templateFile.value) {
+      form.set('template', templateFile.value)
+    }
+
     const saved = await saveBrand(form)
     logoUrl.value = saved.logoPath ? toAbsoluteBackendUrl(saved.logoPath) : logoUrl.value
+    templateUrl.value = saved.templatePath ? toAbsoluteBackendUrl(saved.templatePath) : templateUrl.value
     message.value = 'Gemt'
   } catch (e) {
     message.value = e instanceof Error ? e.message : 'Fejl'

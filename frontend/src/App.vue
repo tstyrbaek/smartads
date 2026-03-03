@@ -12,7 +12,6 @@
         <div v-if="isAuthenticated" class="flex items-center gap-2">
           <!-- Desktop Menu -->
           <nav class="hidden md:flex gap-3 text-sm">
-            <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
             <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/ads">Annoncer</RouterLink>
           </nav>
 
@@ -57,6 +56,7 @@
               <RouterLink class="block rounded px-3 py-2 hover:bg-gray-100" to="/profile" role="menuitem">
                 Profil
               </RouterLink>
+              <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
               <RouterLink
                 v-if="(me?.companies?.length ?? 0) > 1"
                 class="block rounded px-3 py-2 hover:bg-gray-100"
