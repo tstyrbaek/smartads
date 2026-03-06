@@ -100,11 +100,15 @@
 
           <button
             class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
-            :disabled="creating || text.trim() === '' || !canCreateAd"
+            :disabled="creating || !canCreateAd || !canSubmit"
             @click="onCreate"
           >
             Generér annonce
           </button>
+
+          <div v-if="!canSubmit" class="text-xs text-gray-600">
+            Udfyld annonce tekst, eller udfyld instrukser og vedhæft mindst ét referencebillede.
+          </div>
         </div>
 
         <label class="hidden ml-2 items-center gap-2 text-sm text-gray-700">
@@ -282,6 +286,14 @@ const debugJson = computed(() => {
 })
 
 const isLoading = computed(() => creating.value || ad.value?.status === 'generating')
+
+const canSubmit = computed(() => {
+  const hasText = text.value.trim() !== ''
+  const hasInstructions = instructions.value.trim() !== ''
+  const hasImages = selectedImages.value.length > 0
+
+  return hasText || (hasInstructions && hasImages)
+})
 
 const canCreateAd = computed(() => {
   const summary = tokensSummary.value

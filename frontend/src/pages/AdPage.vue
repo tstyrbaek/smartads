@@ -33,7 +33,12 @@
 
       <div class="grid gap-2">
         <label class="text-sm font-medium" for="text">Annonce tekst</label>
-        <textarea id="text" v-model="text" class="min-h-28 w-full rounded border px-3 py-2" />
+        <textarea id="text" v-model="text" class="min-h-28 w-full rounded border px-3 py-2"></textarea>
+      </div>
+
+      <div class="grid gap-2">
+        <label class="text-sm font-medium" for="instructions">Instrukser til AI</label>
+        <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border px-3 py-2"></textarea>
       </div>
 
       <div class="grid gap-2">
@@ -52,7 +57,7 @@
       <div class="flex items-center gap-3">
         <button
           class="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          :disabled="creating || text.trim() === '' || !canCreateAd"
+          :disabled="creating || !canCreateAd || !canSubmit"
           @click="onCreate"
         >
           Generér annonce
@@ -66,6 +71,10 @@
           <span>Genererer annonce...</span>
         </div>
         <div v-else-if="statusText" class="text-sm text-gray-700">{{ statusText }}</div>
+      </div>
+
+      <div v-if="!canSubmit" class="text-xs text-gray-600">
+        Udfyld annonce tekst, eller udfyld instrukser og vedhæft mindst ét referencebillede.
       </div>
     </div>
 
@@ -106,6 +115,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { createAd, getAd, getTokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug, type TokensSummaryResponse } from '../lib/api'
 
 const text = ref('')
+const instructions = ref('')
 const creating = ref(false)
 const statusText = ref<string | null>(null)
 
@@ -135,6 +145,14 @@ const debugJson = computed(() => {
 })
 
 const isLoading = computed(() => creating.value || ad.value?.status === 'generating')
+
+const canSubmit = computed(() => {
+  const hasText = text.value.trim() !== ''
+  const hasInstructions = instructions.value.trim() !== ''
+  const hasImages = selectedImages.value.length > 0
+
+  return hasText || (hasInstructions && hasImages)
+})
 
 const canCreateAd = computed(() => {
   if (!tokensSummary.value) return true
@@ -183,7 +201,11 @@ async function onCreate() {
   clearPoll()
 
   try {
-    const res = await createAd(text.value, { debug: showDebug.value, images: selectedImages.value })
+    const res = await createAd(text.value, {
+      debug: showDebug.value,
+      images: selectedImages.value,
+      instructions: instructions.value,
+    })
     statusText.value = res.status
 
     if (showDebug.value) {

@@ -121,30 +121,40 @@ class GenerateAdImageJob implements ShouldQueue
         ];
 
         $instructions = is_string($ad->instructions) ? trim($ad->instructions) : '';
+        $allowImageText = $instructions !== '' && str_contains($instructions, '[ALLOW_IMAGE_TEXT]');
+        $instructionsForPrompt = $allowImageText
+            ? trim(str_replace('[ALLOW_IMAGE_TEXT]', '', $instructions))
+            : $instructions;
 
         $prompt = "Create a clean, modern web advertisement image.\n";
         $prompt .= "Target output size: {$imageWidth}x{$imageHeight} pixels.\n";
+        $prompt .= "TEXT POLICY (CRITICAL):\n";
+        $prompt .= "- The final image MUST NOT contain any additional or invented text.\n";
+        if ($allowImageText) {
+            $prompt .= "- Allowed text is ONLY: (1) the exact ad text provided below, and (2) text that already exists in the provided product reference images.\n";
+            $prompt .= "- If you use text from product images, copy it EXACTLY as it appears.\n";
+        } else {
+            $prompt .= "- Allowed text is ONLY the exact ad text provided below (and nothing else).\n";
+        }
+        $prompt .= "- Do NOT add: calls-to-action, headlines, subheadlines, labels, badges, prices, discount tags, dates, phone numbers, addresses, URLs, social handles, footnotes, legal text, or placeholder text.\n";
+        $prompt .= "- Do NOT add any text from the style template or from the logo image.\n";
+        $prompt .= "- If you feel more text is needed for the design, leave it out and use visual elements instead.\n";
         if ($colorsText !== '') {
             $prompt .= "Use the brand colors: {$colorsText}.\n";
         }
         if (is_string($brand?->fonts) && trim($brand->fonts) !== '') {
             $prompt .= "Brand fonts: " . trim($brand->fonts) . ".\n";
         }
-        if (is_string($brand?->slogan) && trim($brand->slogan) !== '') {
-            $prompt .= "Brand slogan/tagline: \"" . trim($brand->slogan) . "\".\n";
-        }
         if (is_string($brand?->visual_guidelines) && trim($brand->visual_guidelines) !== '') {
             $prompt .= "Visual guidelines: " . trim($brand->visual_guidelines) . "\n";
         }
-        $prompt .= "Company description: {$company->company_description}.\n";
-        $prompt .= "Target audience: {$company->target_audience_description}.\n";
         $prompt .= "Logo: Use the provided reference logo image (do not invent a new logo). Include EXACTLY ONE logo in the design. Do not duplicate the logo elsewhere.\n";
         if (is_string($templatePath) && trim($templatePath) !== '') {
             $prompt .= "Style reference: A design template image is provided as a reference. Use it ONLY for visual style (layout, spacing, typography style, font usage and color usage). Do NOT copy any text, photos, or specific objects from the template.\n";
         }
         $prompt .= "The ad text must be clearly readable and spelled correctly, and MUST appear EXACTLY as written (do not change wording, spelling):\n\"{$ad->text}\"\n";
-        if ($instructions !== '') {
-            $prompt .= "User instructions (follow these while keeping the ad text EXACTLY as written):\n{$instructions}\n";
+        if ($instructionsForPrompt !== '') {
+            $prompt .= "User instructions (follow these while keeping the ad text EXACTLY as written):\n{$instructionsForPrompt}\n";
         }
         $prompt .= "Minimal layout, high contrast, professional typography, safe margins.";
 

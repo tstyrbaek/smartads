@@ -45,7 +45,7 @@ class AdController
         }
 
         $validated = $request->validate([
-            'text' => ['required', 'string'],
+            'text' => ['nullable', 'string'],
             'instructions' => ['nullable', 'string', 'max:2000'],
             'image_width' => ['nullable', 'integer', 'min:50', 'max:4000'],
             'image_height' => ['nullable', 'integer', 'min:50', 'max:4000'],
@@ -113,13 +113,23 @@ class AdController
             }
         }
 
+        $text = isset($validated['text']) ? trim((string) $validated['text']) : '';
+        $instructions = isset($validated['instructions']) ? trim((string) $validated['instructions']) : '';
+
+        if ($text === '' && ($instructions === '' || count($imagePaths) < 1)) {
+            return response()->json([
+                'error' => 'text_required',
+                'message' => 'Text er påkrævet, medmindre du både har instrukser og mindst ét referencebillede.',
+            ], 422);
+        }
+
         $ad = Ad::query()->create([
             'id' => $id,
             'company_id' => $companyId,
             'user_id' => $user->id,
             'title' => $title,
-            'text' => (string) $validated['text'],
-            'instructions' => isset($validated['instructions']) ? (string) $validated['instructions'] : null,
+            'text' => $text,
+            'instructions' => $instructions !== '' ? $instructions : null,
             'image_width' => $imageWidth,
             'image_height' => $imageHeight,
             'status' => 'generating',
