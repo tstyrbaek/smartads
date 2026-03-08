@@ -42,6 +42,12 @@
       </div>
 
       <div class="grid gap-2">
+        <label class="text-sm font-medium" for="targetUrl">Target URL (valgfrit)</label>
+        <input id="targetUrl" v-model="targetUrl" class="w-full rounded border px-3 py-2" type="url" placeholder="https://..." />
+        <p class="text-xs text-gray-600">Hvis angivet, bruges linket i embed i stedet for virksomhedens website.</p>
+      </div>
+
+      <div class="grid gap-2">
         <label class="text-sm font-medium" for="images">Reference billeder (op til 3)</label>
         <input
           id="images"
@@ -116,6 +122,7 @@ import { createAd, getAd, getTokensSummary, toAbsoluteBackendUrl, type Ad, type 
 
 const text = ref('')
 const instructions = ref('')
+const targetUrl = ref('')
 const creating = ref(false)
 const statusText = ref<string | null>(null)
 
@@ -205,6 +212,7 @@ async function onCreate() {
       debug: showDebug.value,
       images: selectedImages.value,
       instructions: instructions.value,
+      targetUrl: targetUrl.value,
     })
     statusText.value = res.status
 

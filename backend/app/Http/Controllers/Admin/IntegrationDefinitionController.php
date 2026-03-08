@@ -149,6 +149,27 @@ class IntegrationDefinitionController extends Controller
                 $capabilities['embed_public_id'] = (string) Str::uuid();
             }
 
+            $viewMode = (string) ($capabilities['view_mode'] ?? 'grid');
+            if (!in_array($viewMode, ['grid', 'slideshow'], true)) {
+                return ['capabilities_error' => 'Visning skal være grid eller slideshow.'];
+            }
+            $capabilities['view_mode'] = $viewMode;
+
+            $itemsPerView = isset($capabilities['slideshow_items_per_view']) && is_numeric($capabilities['slideshow_items_per_view'])
+                ? (int) $capabilities['slideshow_items_per_view']
+                : 3;
+            $intervalMs = isset($capabilities['slideshow_interval_ms']) && is_numeric($capabilities['slideshow_interval_ms'])
+                ? (int) $capabilities['slideshow_interval_ms']
+                : 4000;
+            if ($itemsPerView < 1 || $itemsPerView > 6) {
+                return ['capabilities_error' => 'Antal synlige skal være mellem 1 og 6.'];
+            }
+            if ($intervalMs < 1500 || $intervalMs > 20000) {
+                return ['capabilities_error' => 'Interval skal være mellem 1500 og 20000 ms.'];
+            }
+            $capabilities['slideshow_items_per_view'] = $itemsPerView;
+            $capabilities['slideshow_interval_ms'] = $intervalMs;
+
             $w = isset($capabilities['ad_width']) && is_numeric($capabilities['ad_width']) ? (int) $capabilities['ad_width'] : null;
             $h = isset($capabilities['ad_height']) && is_numeric($capabilities['ad_height']) ? (int) $capabilities['ad_height'] : null;
             if (($w && !$h) || (!$w && $h)) {

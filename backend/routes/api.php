@@ -157,6 +157,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_admin' => method_exists($user, 'isAdmin') ? (bool) $user->isAdmin() : false,
             ],
             'companies' => $companies->map(function ($company) {
                 return [
@@ -235,6 +236,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ads', [AdController::class, 'index']);
         Route::post('/ads', [AdController::class, 'store']);
         Route::get('/ads/{id}', [AdController::class, 'show']);
+        Route::patch('/ads/{id}', [AdController::class, 'update']);
         Route::get('/ads/{id}/integrations', [AdController::class, 'integrations']);
         Route::put('/ads/{id}/integrations', [AdController::class, 'updateIntegrations']);
         Route::get('/ads/{id}/image', [AdController::class, 'image']);

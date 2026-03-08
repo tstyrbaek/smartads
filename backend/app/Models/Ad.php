@@ -18,6 +18,7 @@ class Ad extends Model
         'user_id',
         'title',
         'text',
+        'target_url',
         'instructions',
         'prompt',
         'prompt_version',

@@ -85,6 +85,35 @@
                 @endif
             </select>
         </div>
+
+        <div class="mt-6 grid gap-2">
+            <label class="block font-medium text-sm text-gray-700" for="networkViewMode">Visning</label>
+            <select id="networkViewMode" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="grid">Grid</option>
+                <option value="slideshow">Slideshow</option>
+            </select>
+            <p class="text-xs text-gray-600">Vælg hvordan annoncerne vises i network embed.</p>
+        </div>
+
+        <div id="networkSlideshowFields" class="mt-4 hidden rounded-md border bg-white p-4">
+            <div class="text-sm font-semibold text-gray-900">Slideshow</div>
+            <p class="mt-1 text-xs text-gray-600">Autoplay og loop er altid slået til.</p>
+
+            <div class="mt-4 grid gap-2">
+                <label class="block font-medium text-sm text-gray-700" for="networkItemsPerView">Antal synlige</label>
+                <select id="networkItemsPerView" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    @for($n = 1; $n <= 6; $n++)
+                        <option value="{{ $n }}">{{ $n }}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="mt-4 grid gap-2">
+                <label class="block font-medium text-sm text-gray-700" for="networkIntervalMs">Skift hvert (ms)</label>
+                <input id="networkIntervalMs" type="number" min="1500" max="20000" step="500" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                <p class="text-xs text-gray-600">1500-20000 ms.</p>
+            </div>
+        </div>
     </div>
 
     <div class="flex items-center gap-3">
@@ -109,6 +138,10 @@
     var capabilitiesEl = document.getElementById('capabilities')
     var sizeBoxEl = document.getElementById('networkSizeFields')
     var sizeEl = document.getElementById('networkAdSize')
+    var viewModeEl = document.getElementById('networkViewMode')
+    var slideshowBoxEl = document.getElementById('networkSlideshowFields')
+    var itemsPerViewEl = document.getElementById('networkItemsPerView')
+    var intervalMsEl = document.getElementById('networkIntervalMs')
 
     if (!typeEl || !keyEl) return
 
@@ -171,6 +204,7 @@
       var type = String(typeEl.value || '')
       if (type !== 'network_website_embed') {
         sizeBoxEl.classList.add('hidden')
+        if (slideshowBoxEl) slideshowBoxEl.classList.add('hidden')
         return
       }
 
@@ -183,6 +217,33 @@
       var wStr = w && !isNaN(Number(w)) ? String(parseInt(w, 10)) : ''
       var hStr = h && !isNaN(Number(h)) ? String(parseInt(h, 10)) : ''
       sizeEl.value = wStr && hStr ? wStr + 'x' + hStr : ''
+
+      if (viewModeEl) {
+        var vm = String(caps.view_mode || 'grid')
+        if (vm !== 'grid' && vm !== 'slideshow') vm = 'grid'
+        viewModeEl.value = vm
+      }
+
+      if (itemsPerViewEl) {
+        var ipv = caps.slideshow_items_per_view
+        var ipvNum = ipv && !isNaN(Number(ipv)) ? parseInt(ipv, 10) : 3
+        if (!ipvNum || ipvNum < 1) ipvNum = 1
+        if (ipvNum > 6) ipvNum = 6
+        itemsPerViewEl.value = String(ipvNum)
+      }
+
+      if (intervalMsEl) {
+        var im = caps.slideshow_interval_ms
+        var imNum = im && !isNaN(Number(im)) ? parseInt(im, 10) : 4000
+        if (!imNum || imNum < 1500) imNum = 1500
+        if (imNum > 20000) imNum = 20000
+        intervalMsEl.value = String(imNum)
+      }
+
+      if (slideshowBoxEl && viewModeEl) {
+        if (String(viewModeEl.value || '') === 'slideshow') slideshowBoxEl.classList.remove('hidden')
+        else slideshowBoxEl.classList.add('hidden')
+      }
     }
 
     function syncNetworkSizeToCapabilities() {
@@ -212,6 +273,40 @@
       writeCapabilities(caps)
     }
 
+    function syncNetworkViewModeToCapabilities() {
+      if (!viewModeEl) return
+      var type = String(typeEl.value || '')
+      if (type !== 'network_website_embed') return
+      var caps = parseCapabilities()
+      var vm = String(viewModeEl.value || 'grid')
+      if (vm !== 'grid' && vm !== 'slideshow') vm = 'grid'
+      caps.view_mode = vm
+      writeCapabilities(caps)
+      applyNetworkSizeUI()
+    }
+
+    function syncNetworkSlideshowToCapabilities() {
+      var type = String(typeEl.value || '')
+      if (type !== 'network_website_embed') return
+      var caps = parseCapabilities()
+
+      if (itemsPerViewEl) {
+        var ipv = parseInt(String(itemsPerViewEl.value || '3'), 10)
+        if (!ipv || ipv < 1) ipv = 1
+        if (ipv > 6) ipv = 6
+        caps.slideshow_items_per_view = ipv
+      }
+
+      if (intervalMsEl) {
+        var im = parseInt(String(intervalMsEl.value || '4000'), 10)
+        if (!im || im < 1500) im = 1500
+        if (im > 20000) im = 20000
+        caps.slideshow_interval_ms = im
+      }
+
+      writeCapabilities(caps)
+    }
+
     typeEl.addEventListener('change', applyNetworkKeyLock)
     typeEl.addEventListener('change', applyNetworkSizeUI)
 
@@ -221,6 +316,19 @@
 
     if (sizeEl) {
       sizeEl.addEventListener('change', syncNetworkSizeToCapabilities)
+    }
+
+    if (viewModeEl) {
+      viewModeEl.addEventListener('change', syncNetworkViewModeToCapabilities)
+    }
+
+    if (itemsPerViewEl) {
+      itemsPerViewEl.addEventListener('change', syncNetworkSlideshowToCapabilities)
+    }
+
+    if (intervalMsEl) {
+      intervalMsEl.addEventListener('input', syncNetworkSlideshowToCapabilities)
+      intervalMsEl.addEventListener('change', syncNetworkSlideshowToCapabilities)
     }
 
     applyNetworkKeyLock()

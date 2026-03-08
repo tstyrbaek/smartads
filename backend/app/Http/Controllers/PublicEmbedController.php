@@ -22,7 +22,21 @@ class PublicEmbedController extends Controller
             "    container.setAttribute('data-smartads-embed','" . (int) $instance->id . "');\n" .
             "    if(s&&s.parentNode){s.parentNode.insertBefore(container,s);}else{document.body.appendChild(container);}\n" .
             "    var url='" . route('embed.render', ['instance' => $instance->id]) . "?token=" . rawurlencode($token) . "';\n" .
-            "    fetch(url).then(function(r){return r.text();}).then(function(html){container.innerHTML=html;}).catch(function(){});\n" .
+            "    function runScripts(root){\n" .
+            "      var scripts=root.querySelectorAll('script');\n" .
+            "      for(var i=0;i<scripts.length;i++){\n" .
+            "        var old=scripts[i];\n" .
+            "        var neu=document.createElement('script');\n" .
+            "        if(old.type) neu.type=old.type;\n" .
+            "        if(old.src){neu.src=old.src;}\n" .
+            "        else{neu.text=old.text||old.textContent||'';}\n" .
+            "        old.parentNode.replaceChild(neu,old);\n" .
+            "      }\n" .
+            "    }\n" .
+            "    fetch(url)\n" .
+            "      .then(function(r){return r.text();})\n" .
+            "      .then(function(html){container.innerHTML=html;runScripts(container);})\n" .
+            "      .catch(function(){});\n" .
             "  }\n" .
             "  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',load);}else{load();}\n" .
             "})(document.currentScript);";
@@ -61,16 +75,37 @@ class PublicEmbedController extends Controller
             $expectedH = isset($caps['ad_height']) && is_numeric($caps['ad_height']) ? (int) $caps['ad_height'] : null;
         }
 
-        $adsQuery = $instance->ads()->orderByDesc('created_at');
+        $adsQuery = $instance->ads()->inRandomOrder();
         if ($expectedW && $expectedH) {
             $adsQuery->where('image_width', $expectedW)->where('image_height', $expectedH);
         }
 
         $ads = $adsQuery->get();
 
+        $config = is_array($instance->config) ? $instance->config : [];
+        $viewMode = (string) ($config['view_mode'] ?? 'grid');
+        if (!in_array($viewMode, ['grid', 'slideshow'], true)) {
+            $viewMode = 'grid';
+        }
+        $itemsPerView = isset($config['slideshow_items_per_view']) && is_numeric($config['slideshow_items_per_view'])
+            ? (int) $config['slideshow_items_per_view']
+            : 3;
+        if ($itemsPerView < 1 || $itemsPerView > 6) {
+            $itemsPerView = 3;
+        }
+        $intervalMs = isset($config['slideshow_interval_ms']) && is_numeric($config['slideshow_interval_ms'])
+            ? (int) $config['slideshow_interval_ms']
+            : 4000;
+        if ($intervalMs < 1500 || $intervalMs > 20000) {
+            $intervalMs = 4000;
+        }
+
         $html = view('embed.instance', [
             'ads' => $ads,
             'instance' => $instance,
+            'viewMode' => $viewMode,
+            'itemsPerView' => $itemsPerView,
+            'intervalMs' => $intervalMs,
         ])->render();
 
         return response($html, 200)
@@ -91,7 +126,21 @@ class PublicEmbedController extends Controller
             "    container.setAttribute('data-smartads-network-embed','" . addslashes($publicId) . "');\n" .
             "    if(s&&s.parentNode){s.parentNode.insertBefore(container,s);}else{document.body.appendChild(container);}\n" .
             "    var url='" . route('network-embed.render', ['publicId' => $publicId]) . "';\n" .
-            "    fetch(url).then(function(r){return r.text();}).then(function(html){container.innerHTML=html;}).catch(function(){});\n" .
+            "    function runScripts(root){\n" .
+            "      var scripts=root.querySelectorAll('script');\n" .
+            "      for(var i=0;i<scripts.length;i++){\n" .
+            "        var old=scripts[i];\n" .
+            "        var neu=document.createElement('script');\n" .
+            "        if(old.type) neu.type=old.type;\n" .
+            "        if(old.src){neu.src=old.src;}\n" .
+            "        else{neu.text=old.text||old.textContent||'';}\n" .
+            "        old.parentNode.replaceChild(neu,old);\n" .
+            "      }\n" .
+            "    }\n" .
+            "    fetch(url)\n" .
+            "      .then(function(r){return r.text();})\n" .
+            "      .then(function(html){container.innerHTML=html;runScripts(container);})\n" .
+            "      .catch(function(){});\n" .
             "  }\n" .
             "  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',load);}else{load();}\n" .
             "})(document.currentScript);";
@@ -124,7 +173,7 @@ class PublicEmbedController extends Controller
                     ->whereNotNull('ad_integration_instance.published_at');
             })
             ->with(['company'])
-            ->orderByDesc('created_at');
+            ->inRandomOrder();
 
         if ($expectedW && $expectedH) {
             $adsQuery->where('image_width', $expectedW)->where('image_height', $expectedH);
@@ -132,9 +181,29 @@ class PublicEmbedController extends Controller
 
         $ads = $adsQuery->limit(200)->get();
 
+        $viewMode = (string) ($caps['view_mode'] ?? 'grid');
+        if (!in_array($viewMode, ['grid', 'slideshow'], true)) {
+            $viewMode = 'grid';
+        }
+        $itemsPerView = isset($caps['slideshow_items_per_view']) && is_numeric($caps['slideshow_items_per_view'])
+            ? (int) $caps['slideshow_items_per_view']
+            : 3;
+        if ($itemsPerView < 1 || $itemsPerView > 6) {
+            $itemsPerView = 3;
+        }
+        $intervalMs = isset($caps['slideshow_interval_ms']) && is_numeric($caps['slideshow_interval_ms'])
+            ? (int) $caps['slideshow_interval_ms']
+            : 4000;
+        if ($intervalMs < 1500 || $intervalMs > 20000) {
+            $intervalMs = 4000;
+        }
+
         $html = view('embed.network', [
             'ads' => $ads,
             'definition' => $definition,
+            'viewMode' => $viewMode,
+            'itemsPerView' => $itemsPerView,
+            'intervalMs' => $intervalMs,
         ])->render();
 
         return response($html, 200)

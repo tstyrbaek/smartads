@@ -46,6 +46,7 @@ class AdController
 
         $validated = $request->validate([
             'text' => ['nullable', 'string'],
+            'target_url' => ['nullable', 'string', 'max:2000'],
             'instructions' => ['nullable', 'string', 'max:2000'],
             'image_width' => ['nullable', 'integer', 'min:50', 'max:4000'],
             'image_height' => ['nullable', 'integer', 'min:50', 'max:4000'],
@@ -114,7 +115,12 @@ class AdController
         }
 
         $text = isset($validated['text']) ? trim((string) $validated['text']) : '';
+        $targetUrl = isset($validated['target_url']) ? trim((string) $validated['target_url']) : '';
         $instructions = isset($validated['instructions']) ? trim((string) $validated['instructions']) : '';
+
+        if ($targetUrl !== '' && !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+            return response()->json(['error' => 'invalid_target_url'], 422);
+        }
 
         if ($text === '' && ($instructions === '' || count($imagePaths) < 1)) {
             return response()->json([
@@ -129,6 +135,7 @@ class AdController
             'user_id' => $user->id,
             'title' => $title,
             'text' => $text,
+            'target_url' => $targetUrl !== '' ? $targetUrl : null,
             'instructions' => $instructions !== '' ? $instructions : null,
             'image_width' => $imageWidth,
             'image_height' => $imageHeight,
@@ -173,6 +180,33 @@ class AdController
             'downloadUrl' => $downloadUrl,
             'previewUrl' => $previewUrl,
             'debug' => $debug,
+        ]);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $companyId = (int) $request->attributes->get('active_company_id');
+
+        $ad = Ad::query()->where('company_id', $companyId)->findOrFail($id);
+
+        $validated = $request->validate([
+            'target_url' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $targetUrl = isset($validated['target_url']) ? trim((string) $validated['target_url']) : '';
+        if ($targetUrl !== '' && !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+            return response()->json(['error' => 'invalid_target_url'], 422);
+        }
+
+        $ad->forceFill([
+            'target_url' => $targetUrl !== '' ? $targetUrl : null,
+        ])->save();
+
+        $ad->load('integrationInstances');
+
+        return response()->json([
+            'ok' => true,
+            'ad' => $this->serializeAd($ad),
         ]);
     }
 
@@ -369,12 +403,21 @@ class AdController
             'id' => $ad->id,
             'title' => $ad->title,
             'text' => $ad->text,
+            'targetUrl' => is_string($ad->target_url) ? $ad->target_url : null,
             'instructions' => $ad->instructions,
+            'prompt' => is_string($ad->prompt) ? $ad->prompt : null,
+            'promptVersion' => is_string($ad->prompt_version) ? $ad->prompt_version : null,
             'status' => $ad->status,
             'nanobananaTaskId' => null,
             'localFilePath' => $filePath,
             'imageWidth' => is_numeric($ad->image_width) ? (int) $ad->image_width : 800,
             'imageHeight' => is_numeric($ad->image_height) ? (int) $ad->image_height : 800,
+            'promptTokens' => is_numeric($ad->prompt_tokens) ? (int) $ad->prompt_tokens : null,
+            'outputTokens' => is_numeric($ad->output_tokens) ? (int) $ad->output_tokens : null,
+            'totalTokens' => is_numeric($ad->total_tokens) ? (int) $ad->total_tokens : null,
+            'inputImagePaths' => is_array($ad->input_image_paths) ? $ad->input_image_paths : null,
+            'brandSnapshot' => is_array($ad->brand_snapshot) ? $ad->brand_snapshot : null,
+            'debug' => is_array($ad->debug) ? $ad->debug : null,
             'integrationInstances' => $ad->integrationInstances
                 ->map(fn (IntegrationInstance $instance) => [
                     'id' => (int) $instance->id,
@@ -398,6 +441,7 @@ class AdController
                 ])
                 ->values(),
             'error' => $ad->error,
+            'createdAt' => $ad->created_at?->toISOString(),
             'updatedAt' => $ad->updated_at?->toISOString(),
         ];
     }

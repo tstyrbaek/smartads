@@ -62,7 +62,7 @@ export type NotificationsResponse = {
 }
 
 export type MeResponse = {
-  user: { id: number; name: string; email: string }
+  user: { id: number; name: string; email: string; is_admin?: boolean }
   companies: { id: number; name: string; logo_path: string | null }[]
 }
 
@@ -74,11 +74,21 @@ export type User = {
 
 export type Ad = {
   id: string
+  title?: string | null
   text: string
+  targetUrl?: string | null
   instructions?: string | null
+  prompt?: string | null
+  promptVersion?: string | null
   imageWidth?: number
   imageHeight?: number
   status: 'creating' | 'generating' | 'success' | 'failed'
+  promptTokens?: number | null
+  outputTokens?: number | null
+  totalTokens?: number | null
+  inputImagePaths?: string[] | null
+  brandSnapshot?: any | null
+  debug?: any | null
   nanobananaTaskId?: string | null
   resultImageUrl?: string | null
   localFilePath?: string | null
@@ -90,6 +100,7 @@ export type Ad = {
     published_at?: string | null
   }[]
   error?: string | null
+  createdAt?: string | null
   updatedAt?: string | null
 }
 
@@ -170,8 +181,33 @@ async function apiFetch(path: string, init?: RequestInit) {
   }
 
   if (!res.ok) {
+    const contentType = res.headers.get('content-type') ?? ''
     const text = await res.text()
-    const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim()
+    const snippet = text.slice(0, 400).replace(/\s+/g, ' ').trim()
+
+    if (contentType.includes('application/json')) {
+      try {
+        const json = JSON.parse(text) as any
+        if (json?.message && typeof json.message === 'string') {
+          throw new Error(json.message)
+        }
+        if (json?.error && typeof json.error === 'string') {
+          throw new Error(json.error)
+        }
+        if (json?.errors && typeof json.errors === 'object') {
+          const flat = Object.entries(json.errors)
+            .flatMap(([k, v]) => {
+              if (Array.isArray(v)) return v.map((m) => `${k}: ${String(m)}`)
+              return [`${k}: ${String(v)}`]
+            })
+            .join(' | ')
+          throw new Error(flat || `HTTP ${res.status}`)
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message) throw e
+      }
+    }
+
     throw new Error(snippet || `HTTP ${res.status}`)
   }
   return res
@@ -348,10 +384,12 @@ export async function createAd(
     instructions?: string
     imageWidth?: number
     imageHeight?: number
+    targetUrl?: string
   },
 ): Promise<{ adId: string; status: string; debug?: AdCreateDebug | null }> {
   const images = (opts?.images ?? []).slice(0, 5)
   const instructions = (opts?.instructions ?? '').trim()
+  const targetUrl = (opts?.targetUrl ?? '').trim()
   const imageWidth = typeof opts?.imageWidth === 'number' && Number.isFinite(opts.imageWidth) ? opts.imageWidth : null
   const imageHeight = typeof opts?.imageHeight === 'number' && Number.isFinite(opts.imageHeight) ? opts.imageHeight : null
 
@@ -363,6 +401,7 @@ export async function createAd(
             const form = new FormData()
             form.set('text', text)
             if (instructions !== '') form.set('instructions', instructions)
+            if (targetUrl !== '') form.set('target_url', targetUrl)
             if (imageWidth !== null) form.set('image_width', String(imageWidth))
             if (imageHeight !== null) form.set('image_height', String(imageHeight))
             if (opts?.debug === true) form.set('debug', '1')
@@ -378,6 +417,7 @@ export async function createAd(
           body: JSON.stringify({
             text,
             instructions: instructions !== '' ? instructions : null,
+            target_url: targetUrl !== '' ? targetUrl : null,
             image_width: imageWidth,
             image_height: imageHeight,
             debug: opts?.debug === true,
@@ -389,6 +429,20 @@ export async function createAd(
 export async function getAd(id: string): Promise<{ ad: Ad; downloadUrl: string | null; previewUrl: string | null }> {
   const res = await apiFetch(`/api/ads/${encodeURIComponent(id)}`)
   return (await res.json()) as { ad: Ad; downloadUrl: string | null; previewUrl: string | null }
+}
+
+export async function updateAd(
+  id: string,
+  input: {
+    target_url?: string | null
+  },
+): Promise<{ ok: true; ad: Ad }> {
+  const res = await apiFetch(`/api/ads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { ok: true; ad: Ad }
 }
 
 export async function listAds(): Promise<{ ads: Ad[] }> {

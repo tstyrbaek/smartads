@@ -195,7 +195,7 @@
             </div>
 
             <div class="grid gap-2">
-              <label class="text-sm font-medium" for="integrationKey">Integrationstype</label>
+              <label class="text-sm font-medium" for="integrationKey">Integration</label>
               <select
                 id="integrationKey"
                 v-model="integrationForm.integrationKey"
@@ -207,9 +207,15 @@
               </select>
             </div>
 
-            <div class="grid gap-2">
+            <div v-if="!isNetworkWebsiteEmbed" class="grid gap-2">
               <label class="text-sm font-medium" for="integrationName">Navn</label>
               <input id="integrationName" v-model="integrationForm.name" class="w-full rounded border px-3 py-2" />
+            </div>
+            <div v-else class="grid gap-2">
+              <div class="text-sm font-medium text-gray-700">Navn</div>
+              <div class="rounded border bg-white px-3 py-2 text-sm text-gray-700">
+                {{ selectedIntegrationDefinition?.name || 'Network embed' }}
+              </div>
             </div>
 
             <div class="flex items-center gap-3">
@@ -235,6 +241,40 @@
               </div>
 
               <div class="grid gap-2">
+                <label class="text-sm font-medium" for="embedViewMode">Visning</label>
+                <select id="embedViewMode" v-model="integrationForm.viewMode" class="w-full rounded border px-3 py-2">
+                  <option value="grid">Grid</option>
+                  <option value="slideshow">Slideshow</option>
+                </select>
+                <p class="text-xs text-gray-600">Vælg hvordan annoncerne vises på websitet.</p>
+              </div>
+
+              <div v-if="integrationForm.viewMode === 'slideshow'" class="grid gap-4 rounded border bg-gray-50 p-4">
+                <div class="grid gap-2">
+                  <label class="text-sm font-medium" for="embedItemsPerView">Antal synlige</label>
+                  <select id="embedItemsPerView" v-model.number="integrationForm.slideshowItemsPerView" class="w-full rounded border px-3 py-2">
+                    <option v-for="n in 6" :key="n" :value="n">{{ n }}</option>
+                  </select>
+                  <p v-if="slideshowItemsPerViewError" class="text-xs text-red-600">{{ slideshowItemsPerViewError }}</p>
+                </div>
+
+                <div class="grid gap-2">
+                  <label class="text-sm font-medium" for="embedInterval">Skift hvert (ms)</label>
+                  <input
+                    id="embedInterval"
+                    v-model.number="integrationForm.slideshowIntervalMs"
+                    class="w-full rounded border px-3 py-2"
+                    type="number"
+                    min="1500"
+                    max="20000"
+                    step="500"
+                  />
+                  <p class="text-xs text-gray-600">Angives i millisekunder (1500-20000). Autoplay og loop er altid slået til.</p>
+                  <p v-if="slideshowIntervalError" class="text-xs text-red-600">{{ slideshowIntervalError }}</p>
+                </div>
+              </div>
+
+              <div class="grid gap-2">
                 <label class="text-sm font-medium" for="embedToken">Embed token</label>
                 <input id="embedToken" v-model="integrationForm.embedToken" class="w-full rounded border px-3 py-2 font-mono text-xs" />
               </div>
@@ -254,7 +294,7 @@
               <button
                 class="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
                 type="button"
-                :disabled="integrationFormSaving"
+                :disabled="integrationFormSaving || !!slideshowIntervalError || !!slideshowItemsPerViewError"
                 @click="saveIntegration"
               >
                 Gem
@@ -451,7 +491,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   createIntegrationInstance,
   deleteIntegrationInstance,
@@ -509,6 +549,9 @@ const integrationForm = ref<{
   isActive: boolean
   embedToken: string
   adSize: string
+  viewMode: 'grid' | 'slideshow'
+  slideshowItemsPerView: number
+  slideshowIntervalMs: number
 }>({
   open: false,
   mode: 'create',
@@ -518,6 +561,43 @@ const integrationForm = ref<{
   isActive: true,
   embedToken: '',
   adSize: '',
+  viewMode: 'grid',
+  slideshowItemsPerView: 3,
+  slideshowIntervalMs: 4000,
+})
+
+const selectedIntegrationDefinition = computed(() => {
+  const key = integrationForm.value.integrationKey
+  return integrationDefinitions.value.find((d) => d.key === key) ?? null
+})
+
+const isNetworkWebsiteEmbed = computed(() => {
+  return (selectedIntegrationDefinition.value?.type ?? '') === 'network_website_embed'
+})
+
+watch(
+  () => integrationForm.value.integrationKey,
+  () => {
+    if (isNetworkWebsiteEmbed.value) {
+      integrationForm.value.name = selectedIntegrationDefinition.value?.name || 'Network embed'
+    }
+  },
+)
+
+const slideshowIntervalError = computed(() => {
+  if (integrationForm.value.integrationKey !== 'website_embed') return null
+  if (integrationForm.value.viewMode !== 'slideshow') return null
+  const v = Number(integrationForm.value.slideshowIntervalMs)
+  if (!Number.isFinite(v) || v < 1500 || v > 20000) return 'Interval skal være mellem 1500 og 20000 ms.'
+  return null
+})
+
+const slideshowItemsPerViewError = computed(() => {
+  if (integrationForm.value.integrationKey !== 'website_embed') return null
+  if (integrationForm.value.viewMode !== 'slideshow') return null
+  const v = Number(integrationForm.value.slideshowItemsPerView)
+  if (!Number.isFinite(v) || v < 1 || v > 6) return 'Antal synlige skal være mellem 1 og 6.'
+  return null
 })
 
 function onFile(e: Event) {
@@ -590,6 +670,9 @@ function startCreateIntegration() {
   integrationForm.value.isActive = true
   integrationForm.value.embedToken = ''
   integrationForm.value.adSize = ''
+  integrationForm.value.viewMode = 'grid'
+  integrationForm.value.slideshowItemsPerView = 3
+  integrationForm.value.slideshowIntervalMs = 4000
 
   if (integrationDefinitions.value.length > 0) {
     integrationForm.value.integrationKey = integrationDefinitions.value[0].key
@@ -611,6 +694,9 @@ function startEditIntegration(inst: IntegrationInstance) {
   const wNum = w && !isNaN(Number(w)) ? String(parseInt(String(w), 10)) : ''
   const hNum = h && !isNaN(Number(h)) ? String(parseInt(String(h), 10)) : ''
   integrationForm.value.adSize = wNum && hNum ? `${wNum}x${hNum}` : ''
+  integrationForm.value.viewMode = (inst.config?.view_mode === 'slideshow' ? 'slideshow' : 'grid')
+  integrationForm.value.slideshowItemsPerView = Number(inst.config?.slideshow_items_per_view ?? 3)
+  integrationForm.value.slideshowIntervalMs = Number(inst.config?.slideshow_interval_ms ?? 4000)
 }
 
 function closeIntegrationForm() {
@@ -624,11 +710,31 @@ function getEmbedCode(instanceId: number) {
 
 async function saveIntegration() {
   integrationsMessage.value = null
+  const viewMode = integrationForm.value.viewMode === 'slideshow' ? 'slideshow' : 'grid'
+  const itemsPerViewRaw = Number(integrationForm.value.slideshowItemsPerView)
+  const intervalMsRaw = Number(integrationForm.value.slideshowIntervalMs)
+
+  if (integrationForm.value.integrationKey === 'website_embed' && viewMode === 'slideshow') {
+    if (!Number.isFinite(intervalMsRaw) || intervalMsRaw < 1500 || intervalMsRaw > 20000) {
+      integrationsMessage.value = 'Interval skal angives i millisekunder mellem 1500 og 20000.'
+      return
+    }
+    if (!Number.isFinite(itemsPerViewRaw) || itemsPerViewRaw < 1 || itemsPerViewRaw > 6) {
+      integrationsMessage.value = 'Antal synlige skal være mellem 1 og 6.'
+      return
+    }
+  }
+
+  const itemsPerView = Number.isFinite(itemsPerViewRaw) ? Math.min(6, Math.max(1, Math.trunc(itemsPerViewRaw))) : 3
+  const intervalMs = Number.isFinite(intervalMsRaw) ? Math.min(20000, Math.max(1500, Math.trunc(intervalMsRaw))) : 4000
+
   integrationFormSaving.value = true
   try {
+    const name = isNetworkWebsiteEmbed.value ? (selectedIntegrationDefinition.value?.name || 'Network embed') : integrationForm.value.name
+
     const payload = {
       integration_key: integrationForm.value.integrationKey,
-      name: integrationForm.value.name,
+      name,
       is_active: integrationForm.value.isActive,
       config:
         integrationForm.value.integrationKey === 'website_embed'
@@ -636,6 +742,9 @@ async function saveIntegration() {
               embed_token: integrationForm.value.embedToken || null,
               ad_width: integrationForm.value.adSize ? Number(String(integrationForm.value.adSize).split('x')[0]) : null,
               ad_height: integrationForm.value.adSize ? Number(String(integrationForm.value.adSize).split('x')[1]) : null,
+              view_mode: viewMode,
+              slideshow_items_per_view: itemsPerView,
+              slideshow_interval_ms: intervalMs,
             }
           : null,
     }

@@ -60,6 +60,29 @@ class IntegrationController extends Controller
                 $config['embed_token'] = Str::random(48);
             }
 
+            $viewMode = (string) ($config['view_mode'] ?? 'grid');
+            if (!in_array($viewMode, ['grid', 'slideshow'], true)) {
+                return response()->json(['error' => 'invalid_view_mode'], 422);
+            }
+            $config['view_mode'] = $viewMode;
+
+            $itemsPerView = isset($config['slideshow_items_per_view']) && is_numeric($config['slideshow_items_per_view'])
+                ? (int) $config['slideshow_items_per_view']
+                : 3;
+            $intervalMs = isset($config['slideshow_interval_ms']) && is_numeric($config['slideshow_interval_ms'])
+                ? (int) $config['slideshow_interval_ms']
+                : 4000;
+
+            if ($itemsPerView < 1 || $itemsPerView > 6) {
+                return response()->json(['error' => 'invalid_slideshow_items_per_view'], 422);
+            }
+            if ($intervalMs < 1500 || $intervalMs > 20000) {
+                return response()->json(['error' => 'invalid_slideshow_interval_ms'], 422);
+            }
+
+            $config['slideshow_items_per_view'] = $itemsPerView;
+            $config['slideshow_interval_ms'] = $intervalMs;
+
             $w = isset($config['ad_width']) && is_numeric($config['ad_width']) ? (int) $config['ad_width'] : null;
             $h = isset($config['ad_height']) && is_numeric($config['ad_height']) ? (int) $config['ad_height'] : null;
             if (($w && !$h) || (!$w && $h)) {
@@ -114,6 +137,33 @@ class IntegrationController extends Controller
             if ($incomingToken === '' && $currentToken !== '') {
                 $config['embed_token'] = $currentToken;
             }
+
+            $viewMode = (string) ($config['view_mode'] ?? ($instance->config['view_mode'] ?? 'grid'));
+            if (!in_array($viewMode, ['grid', 'slideshow'], true)) {
+                return response()->json(['error' => 'invalid_view_mode'], 422);
+            }
+            $config['view_mode'] = $viewMode;
+
+            $itemsPerView = isset($config['slideshow_items_per_view']) && is_numeric($config['slideshow_items_per_view'])
+                ? (int) $config['slideshow_items_per_view']
+                : (isset($instance->config['slideshow_items_per_view']) && is_numeric($instance->config['slideshow_items_per_view'])
+                    ? (int) $instance->config['slideshow_items_per_view']
+                    : 3);
+            $intervalMs = isset($config['slideshow_interval_ms']) && is_numeric($config['slideshow_interval_ms'])
+                ? (int) $config['slideshow_interval_ms']
+                : (isset($instance->config['slideshow_interval_ms']) && is_numeric($instance->config['slideshow_interval_ms'])
+                    ? (int) $instance->config['slideshow_interval_ms']
+                    : 4000);
+
+            if ($itemsPerView < 1 || $itemsPerView > 6) {
+                return response()->json(['error' => 'invalid_slideshow_items_per_view'], 422);
+            }
+            if ($intervalMs < 1500 || $intervalMs > 20000) {
+                return response()->json(['error' => 'invalid_slideshow_interval_ms'], 422);
+            }
+
+            $config['slideshow_items_per_view'] = $itemsPerView;
+            $config['slideshow_interval_ms'] = $intervalMs;
 
             $w = isset($config['ad_width']) && is_numeric($config['ad_width']) ? (int) $config['ad_width'] : null;
             $h = isset($config['ad_height']) && is_numeric($config['ad_height']) ? (int) $config['ad_height'] : null;

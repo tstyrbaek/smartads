@@ -33,6 +33,12 @@
         </div>
       </details>
 
+      <div class="grid gap-2">
+        <label class="text-sm font-medium" for="targetUrl">Target URL (valgfrit)</label>
+        <input id="targetUrl" v-model="targetUrl" class="w-full rounded border px-3 py-2" type="url" placeholder="https://..." />
+        <p class="text-xs text-gray-600">Hvis angivet, bruges linket i embed i stedet for virksomhedens website.</p>
+      </div>
+
       <div class="rounded border bg-gray-50 p-3">
         <div class="grid gap-2">
           <div class="text-sm font-medium text-gray-900">Annonce størrelse (px)</div>
@@ -169,6 +175,7 @@ const router = useRouter()
 
 const text = ref('')
 const instructions = ref('')
+const targetUrl = ref('')
 const sizePreset = ref('')
 const imageWidth = ref(800)
 const imageHeight = ref(800)
@@ -343,6 +350,7 @@ async function onCreate() {
       instructions: instructions.value,
       imageWidth: imageWidth.value,
       imageHeight: imageHeight.value,
+      targetUrl: targetUrl.value,
     })
 
     if (showDebug.value) {

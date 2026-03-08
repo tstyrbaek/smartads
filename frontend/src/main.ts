@@ -5,6 +5,7 @@ import BrandPage from './pages/BrandPage.vue'
 import AdPage from './pages/AdPage.vue'
 import AdsPage from './pages/AdsPage.vue'
 import CreateAdPage from './pages/CreateAdPage.vue'
+import AdDetailsPage from './pages/AdDetailsPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import ResetPasswordPage from './pages/ResetPasswordPage.vue'
 import SelectCompanyPage from './pages/SelectCompanyPage.vue'
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/company', component: BrandPage },
     { path: '/ads', component: AdsPage },
     { path: '/ads/new', component: CreateAdPage },
+    { path: '/ads/:id', component: AdDetailsPage },
     { path: '/ad', redirect: '/ads/new' },
     { path: '/ad/legacy', component: AdPage },
   ],

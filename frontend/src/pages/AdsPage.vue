@@ -56,6 +56,20 @@
               </div>
 
             <div class="absolute bottom-2 right-2 flex items-center justify-end gap-2">
+              <button
+                class="rounded bg-white/80 p-2 text-gray-700 hover:bg-white"
+                type="button"
+                title="Detaljer"
+                @click="openDetails(ad)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 16h6" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 8h6" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                </svg>
+              </button>
+
               <a
                 v-if="ad.status === 'success' && ad.localFilePath"
                 :href="cardDownloadUrl(ad)"
@@ -234,7 +248,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import Pusher from 'pusher-js'
 import {
@@ -252,10 +266,15 @@ import {
 } from '../lib/api'
 
 const route = useRoute()
+const router = useRouter()
 
 const ads = ref<Ad[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+function openDetails(ad: Ad) {
+  router.push(`/ads/${encodeURIComponent(ad.id)}`)
+}
 
 const previewOpen = ref(false)
 const previewUrl = ref<string | null>(null)
@@ -402,7 +421,7 @@ async function load() {
 let pollTimer: number | null = null
 
 let pusher: Pusher | null = null
-let pusherChannel: Pusher.Channel | null = null
+let pusherChannel: any | null = null
 let realtimeActive = false
 
 function teardownRealtime() {
@@ -511,7 +530,6 @@ onBeforeUnmount(() => {
 })
 
 onMounted(() => {
-  load()
   refreshTokensSummary().catch(() => null)
 })
 </script>
