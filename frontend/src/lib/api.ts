@@ -438,7 +438,7 @@ export async function updateAd(
   },
 ): Promise<{ ok: true; ad: Ad }> {
   const res = await apiFetch(`/api/ads/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
+    method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })

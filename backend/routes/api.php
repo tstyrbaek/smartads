@@ -236,6 +236,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ads', [AdController::class, 'index']);
         Route::post('/ads', [AdController::class, 'store']);
         Route::get('/ads/{id}', [AdController::class, 'show']);
+        Route::post('/ads/{id}', [AdController::class, 'update']);
         Route::patch('/ads/{id}', [AdController::class, 'update']);
         Route::get('/ads/{id}/integrations', [AdController::class, 'integrations']);
         Route::put('/ads/{id}/integrations', [AdController::class, 'updateIntegrations']);
