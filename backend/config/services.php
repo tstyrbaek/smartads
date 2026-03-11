@@ -44,4 +44,10 @@ return [
         'webhook_secret' => env('GEMINI_WEBHOOK_SECRET'),
     ],
 
+    'facebook' => [
+        'app_id' => env('FACEBOOK_APP_ID'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+        'redirect_uri' => env('FACEBOOK_REDIRECT_URI'),
+    ],
+
 ];

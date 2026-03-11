@@ -223,6 +223,61 @@
               <label class="text-sm text-gray-700" for="integrationActive">Aktiv</label>
             </div>
 
+            <div v-if="integrationForm.integrationKey === 'facebook_page'" class="grid gap-4 rounded border bg-white p-4">
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Facebook</div>
+                <p class="mt-1 text-xs text-gray-600">Kobl en Facebook-side på denne integration, så annoncer kan postes som opslag.</p>
+              </div>
+
+              <div v-if="facebookError" class="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{{ facebookError }}</div>
+
+              <div v-if="facebookConnected" class="grid gap-2">
+                <div class="text-xs text-gray-600">Forbundet til</div>
+                <div class="rounded border bg-gray-50 px-3 py-2 text-sm text-gray-900">
+                  {{ facebookPageName || facebookPageId }}
+                </div>
+              </div>
+              <div v-else class="text-sm text-gray-700">Ikke forbundet</div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  class="rounded bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                  type="button"
+                  :disabled="facebookConnecting || integrationForm.mode !== 'edit' || !integrationForm.id"
+                  @click="connectFacebook"
+                >
+                  Kobl Facebook på
+                </button>
+
+                <button
+                  v-if="facebookConnected"
+                  class="rounded border px-3 py-2 text-xs font-semibold hover:bg-gray-50 disabled:opacity-50"
+                  type="button"
+                  :disabled="facebookDisconnecting || integrationForm.mode !== 'edit' || !integrationForm.id"
+                  @click="disconnectFacebook"
+                >
+                  Frakobl
+                </button>
+              </div>
+
+              <div v-if="facebookPages.length > 0" class="grid gap-2">
+                <label class="text-sm font-medium" for="facebookPageSelect">Vælg side</label>
+                <select id="facebookPageSelect" v-model="facebookSelectedPageId" class="w-full rounded border px-3 py-2">
+                  <option value="" disabled>Vælg...</option>
+                  <option v-for="p in facebookPages" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+
+                <button
+                  class="mt-1 rounded bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                  type="button"
+                  :disabled="facebookSelecting || !facebookConnectToken || !facebookSelectedPageId"
+                  @click="selectFacebookPage"
+                >
+                  Gem valg
+                </button>
+              </div>
+            </div>
+
             <div v-if="integrationForm.integrationKey === 'website_embed'" class="grid gap-4 rounded border bg-white p-4">
               <div>
                 <div class="text-sm font-semibold text-gray-900">Embed</div>
@@ -492,21 +547,29 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   createIntegrationInstance,
   deleteIntegrationInstance,
+  disconnectFacebookPage,
   getBrand,
-  listAllowedAdSizes,
   getSubscription,
   getTokensSummary,
+  listAllowedAdSizes,
   listIntegrationDefinitions,
   listIntegrationInstances,
+  resolveFacebookConnect,
   saveBrand,
+  selectFacebookPage as selectFacebookPageApi,
+  startFacebookConnect,
   toAbsoluteBackendUrl,
   updateIntegrationInstance,
   type IntegrationDefinition,
   type IntegrationInstance,
 } from '../lib/api'
+
+const route = useRoute()
+const router = useRouter()
 
 const state = ref({
   companyName: '',
@@ -565,6 +628,82 @@ const integrationForm = ref<{
   slideshowItemsPerView: 3,
   slideshowIntervalMs: 4000,
 })
+
+const facebookConnecting = ref(false)
+const facebookSelecting = ref(false)
+const facebookDisconnecting = ref(false)
+const facebookError = ref<string | null>(null)
+const facebookConnectToken = ref<string | null>(null)
+const facebookPages = ref<{ id: string; name: string }[]>([])
+const facebookSelectedPageId = ref('')
+
+const facebookPageId = computed(() => {
+  const inst = integrationInstances.value.find((i) => i.id === integrationForm.value.id)
+  const v = inst?.config?.page_id
+  return typeof v === 'string' && v.trim() !== '' ? v : null
+})
+
+const facebookPageName = computed(() => {
+  const inst = integrationInstances.value.find((i) => i.id === integrationForm.value.id)
+  const v = inst?.config?.page_name
+  return typeof v === 'string' && v.trim() !== '' ? v : null
+})
+
+const facebookConnected = computed(() => {
+  return Boolean(facebookPageId.value)
+})
+
+async function connectFacebook() {
+  if (!integrationForm.value.id) return
+  facebookError.value = null
+  facebookConnecting.value = true
+  try {
+    const res = await startFacebookConnect({
+      instance_id: integrationForm.value.id,
+      return_to: '/company',
+    })
+    window.location.href = res.url
+  } catch (e) {
+    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke starte Facebook login.'
+  } finally {
+    facebookConnecting.value = false
+  }
+}
+
+async function selectFacebookPage() {
+  if (!facebookConnectToken.value || !facebookSelectedPageId.value) return
+  facebookError.value = null
+  facebookSelecting.value = true
+  try {
+    await selectFacebookPageApi({
+      connect_token: facebookConnectToken.value,
+      page_id: facebookSelectedPageId.value,
+    })
+    facebookConnectToken.value = null
+    facebookPages.value = []
+    facebookSelectedPageId.value = ''
+    await loadIntegrations()
+  } catch (e) {
+    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke gemme valg af Facebook side.'
+  } finally {
+    facebookSelecting.value = false
+  }
+}
+
+async function disconnectFacebook() {
+  if (!integrationForm.value.id) return
+  if (!confirm('Frakobl Facebook fra denne integration?')) return
+  facebookError.value = null
+  facebookDisconnecting.value = true
+  try {
+    await disconnectFacebookPage({ instance_id: integrationForm.value.id })
+    await loadIntegrations()
+  } catch (e) {
+    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke frakoble Facebook.'
+  } finally {
+    facebookDisconnecting.value = false
+  }
+}
 
 const selectedIntegrationDefinition = computed(() => {
   const key = integrationForm.value.integrationKey
@@ -636,6 +775,32 @@ async function load() {
   tokensSummary.value = tokensSummaryResponse
 
   await loadIntegrations()
+
+  const token = typeof route.query.fb_connect_token === 'string' ? route.query.fb_connect_token : null
+  if (token) {
+    await handleFacebookConnectToken(token)
+  }
+}
+
+async function handleFacebookConnectToken(token: string) {
+  facebookError.value = null
+  try {
+    const res = await resolveFacebookConnect({ connect_token: token })
+    facebookConnectToken.value = token
+    facebookPages.value = Array.isArray(res.pages) ? res.pages : []
+    facebookSelectedPageId.value = ''
+
+    const inst = integrationInstances.value.find((i) => i.id === res.instance_id)
+    if (inst) {
+      startEditIntegration(inst)
+    }
+
+    const nextQuery = { ...route.query }
+    delete (nextQuery as any).fb_connect_token
+    await router.replace({ query: nextQuery })
+  } catch (e) {
+    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke hente Facebook sider.'
+  }
 }
 
 async function loadIntegrations() {
@@ -732,6 +897,10 @@ async function saveIntegration() {
   try {
     const name = isNetworkWebsiteEmbed.value ? (selectedIntegrationDefinition.value?.name || 'Network embed') : integrationForm.value.name
 
+    const existingInst = integrationForm.value.id
+      ? integrationInstances.value.find((i) => i.id === integrationForm.value.id) ?? null
+      : null
+
     const payload = {
       integration_key: integrationForm.value.integrationKey,
       name,
@@ -746,7 +915,7 @@ async function saveIntegration() {
               slideshow_items_per_view: itemsPerView,
               slideshow_interval_ms: intervalMs,
             }
-          : null,
+          : (existingInst?.config ?? null),
     }
 
     if (integrationForm.value.mode === 'create') {

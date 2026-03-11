@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Jobs\GenerateAdImageJob;
+use App\Jobs\PostAdToFacebookPageJob;
 use App\Models\Ad;
+use App\Models\Brand;
 use App\Models\Company;
 use App\Models\IntegrationDefinition;
 use App\Models\IntegrationInstance;
@@ -311,6 +313,30 @@ class AdController
         }
 
         $ad->integrationInstances()->sync($syncData);
+
+        foreach ($instanceIds as $instanceId) {
+            $instance = $instances->firstWhere('id', $instanceId);
+            if (!$instance) {
+                continue;
+            }
+            if ((string) $instance->integration_key !== 'facebook_page') {
+                continue;
+            }
+
+            $existingPivot = $existingById->get($instanceId)?->pivot;
+            $alreadyPublished = false;
+            if ($existingPivot) {
+                $meta = is_array($existingPivot->meta) ? $existingPivot->meta : null;
+                $alreadyPublished = (string) ($existingPivot->status ?? '') === 'published'
+                    || (is_array($meta) && isset($meta['facebook_post_id']) && is_string($meta['facebook_post_id']) && trim($meta['facebook_post_id']) !== '');
+            }
+
+            if ($alreadyPublished) {
+                continue;
+            }
+
+            PostAdToFacebookPageJob::dispatch($ad->id, (int) $instanceId);
+        }
 
         $ad->load('integrationInstances');
 

@@ -19,5 +19,16 @@ class IntegrationDefinitionSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        IntegrationDefinition::query()->updateOrCreate(
+            ['key' => 'facebook_page'],
+            [
+                'type' => 'publish',
+                'name' => 'Facebook Page',
+                'description' => 'Post annoncer som almindelige opslag på en Facebook-side.',
+                'capabilities' => ['publish_ad'],
+                'is_active' => true,
+            ]
+        );
     }
 }

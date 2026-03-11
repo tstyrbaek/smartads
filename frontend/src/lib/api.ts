@@ -367,6 +367,52 @@ export async function listAllowedAdSizes(): Promise<{ sizes: { width: number; he
   return (await res.json()) as { sizes: { width: number; height: number }[] }
 }
 
+export async function startFacebookConnect(input: {
+  instance_id: number
+  return_to?: string
+}): Promise<{ url: string }> {
+  const res = await apiFetch('/api/integrations/facebook/start', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { url: string }
+}
+
+export async function resolveFacebookConnect(input: {
+  connect_token: string
+}): Promise<{ instance_id: number; pages: { id: string; name: string }[] }> {
+  const res = await apiFetch('/api/integrations/facebook/connect/resolve', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { instance_id: number; pages: { id: string; name: string }[] }
+}
+
+export async function selectFacebookPage(input: {
+  connect_token: string
+  page_id: string
+}): Promise<{ ok: true; instance: IntegrationInstance }> {
+  const res = await apiFetch('/api/integrations/facebook/select-page', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { ok: true; instance: IntegrationInstance }
+}
+
+export async function disconnectFacebookPage(input: {
+  instance_id: number
+}): Promise<{ ok: true; instance: IntegrationInstance }> {
+  const res = await apiFetch('/api/integrations/facebook/disconnect', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return (await res.json()) as { ok: true; instance: IntegrationInstance }
+}
+
 export type AdCreateDebug = {
   mode?: string
   prompt?: string

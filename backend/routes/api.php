@@ -4,9 +4,10 @@ use App\Models\User;
 use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\GeminiWebhookController;
-use App\Http\Controllers\Api\MetaController;
-use App\Http\Controllers\Api\MailController;
 use App\Http\Controllers\Api\IntegrationController;
+use App\Http\Controllers\Api\FacebookIntegrationController;
+use App\Http\Controllers\Api\MailController;
+use App\Http\Controllers\Api\MetaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\CronQueueController;
@@ -222,6 +223,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('api.company')->group(function () {
+        Route::post('/integrations/facebook/start', [FacebookIntegrationController::class, 'start']);
+        Route::post('/integrations/facebook/connect/resolve', [FacebookIntegrationController::class, 'resolve']);
+        Route::post('/integrations/facebook/select-page', [FacebookIntegrationController::class, 'selectPage']);
+        Route::post('/integrations/facebook/disconnect', [FacebookIntegrationController::class, 'disconnect']);
+
         Route::get('/meta/ad-sizes', [MetaController::class, 'adSizes']);
 
         Route::get('/brand', [BrandController::class, 'show']);
@@ -258,3 +264,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     });
 });
+
+Route::get('/integrations/facebook/callback', [FacebookIntegrationController::class, 'callback']);
