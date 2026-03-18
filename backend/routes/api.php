@@ -22,6 +22,9 @@ Route::get('/cron/queue', [CronQueueController::class, 'run']);
 Route::post('/webhooks/gemini', [GeminiWebhookController::class, 'handle']);
 
 Route::get('/proxy-image', [\App\Http\Controllers\Api\ProxyImageController::class, 'proxy']);
+Route::get('/proxy-image-test', function () {
+    return response()->json(['ok' => true, 'message' => 'Proxy image route works']);
+});
 
 Route::post('/auth/forgot-password', function (Request $request) {
     Log::info('Forgot password request received', ['email' => $request->email]);
