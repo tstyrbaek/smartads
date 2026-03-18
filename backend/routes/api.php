@@ -21,6 +21,8 @@ Route::get('/cron/queue', [CronQueueController::class, 'run']);
 
 Route::post('/webhooks/gemini', [GeminiWebhookController::class, 'handle']);
 
+Route::get('/proxy-image', [\App\Http\Controllers\Api\ProxyImageController::class, 'proxy']);
+
 Route::post('/auth/forgot-password', function (Request $request) {
     Log::info('Forgot password request received', ['email' => $request->email]);
     
@@ -229,6 +231,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/integrations/facebook/disconnect', [FacebookIntegrationController::class, 'disconnect']);
 
         Route::get('/meta/ad-sizes', [MetaController::class, 'adSizes']);
+
+        Route::post('/scrape', [\App\Http\Controllers\Api\ScrapeController::class, 'scrape']);
+        Route::post('/optimize-text', [\App\Http\Controllers\Api\OptimizeTextController::class, 'optimize']);
 
         Route::get('/brand', [BrandController::class, 'show']);
         Route::post('/brand', [BrandController::class, 'store']);

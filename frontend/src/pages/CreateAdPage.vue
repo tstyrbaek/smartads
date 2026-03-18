@@ -41,11 +41,32 @@
         <div class="flex items-center justify-between gap-3 px-4 py-3">
           <div class="text-sm font-medium text-gray-900">Annonce tekst</div>
           <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow-sm hover:bg-purple-700 disabled:opacity-50"
+              :disabled="optimizingText || text.trim() === ''"
+              :title="optimizingText ? 'Optimerer...' : 'Optimer tekst med AI'"
+              @click="onOptimizeText"
+            >
+              <svg class="h-4 w-4" :class="optimizingText ? 'animate-spin' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M9.107 5.448c.598-1.75 3.016-1.803 3.725-.159l.06.16l.807 2.36a4 4 0 0 0 2.276 2.411l.217.081l2.36.806c1.75.598 1.803 3.016.16 3.725l-.16.06l-2.36.807a4 4 0 0 0-2.412 2.276l-.081.216l-.806 2.361c-.598 1.75-3.016 1.803-3.724.16l-.062-.16l-.806-2.36a4 4 0 0 0-2.276-2.412l-.216-.081l-2.36-.806c-1.751-.598-1.804-3.016-.16-3.724l.16-.062l2.36-.806A4 4 0 0 0 8.22 8.025l.081-.216zM11 6.094l-.806 2.36a6 6 0 0 1-3.49 3.649l-.25.091l-2.36.806l2.36.806a6 6 0 0 1 3.649 3.49l.091.25l.806 2.36l.806-2.36a6 6 0 0 1 3.49-3.649l.25-.09l2.36-.807l-2.36-.806a6 6 0 0 1-3.649-3.49l-.09-.25zM19 2a1 1 0 0 1 .898.56l.048.117l.35 1.026l1.027.35a1 1 0 0 1 .118 1.845l-.118.048l-1.026.35l-.35 1.027a1 1 0 0 1-1.845.117l-.048-.117l-.35-1.026l-1.027-.35a1 1 0 0 1-.118-1.845l.118-.048l1.026-.35l.35-1.027A1 1 0 0 1 19 2" />
+              </svg>
+            </button>
             <SpeechToTextButton v-model="text" @error="onSpeechError" />
           </div>
         </div>
         <div class="border-t px-4 py-4">
-          <textarea id="text" v-model="text" class="min-h-[14rem] w-full rounded border bg-gray-50 px-3 py-2"></textarea>
+          <div class="relative">
+            <textarea id="text" v-model="text" class="min-h-[14rem] w-full rounded border px-3 py-2" :class="optimizingText ? 'bg-gray-200' : 'bg-gray-50'" :readonly="optimizingText"></textarea>
+            <div v-if="optimizingText" class="absolute inset-0 flex items-center justify-center rounded bg-gray-900/50 backdrop-blur-sm">
+              <div class="flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-lg">
+                <svg class="h-5 w-5 animate-spin text-purple-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M9.107 5.448c.598-1.75 3.016-1.803 3.725-.159l.06.16l.807 2.36a4 4 0 0 0 2.276 2.411l.217.081l2.36.806c1.75.598 1.803 3.016.16 3.725l-.16.06l-2.36.807a4 4 0 0 0-2.412 2.276l-.081.216l-.806 2.361c-.598 1.75-3.016 1.803-3.724.16l-.062-.16l-.806-2.36a4 4 0 0 0-2.276-2.412l-.216-.081l-2.36-.806c-1.751-.598-1.804-3.016-.16-3.724l.16-.062l2.36-.806A4 4 0 0 0 8.22 8.025l.081-.216zM11 6.094l-.806 2.36a6 6 0 0 1-3.49 3.649l-.25.091l-2.36.806l2.36.806a6 6 0 0 1 3.649 3.49l.091.25l.806 2.36l.806-2.36a6 6 0 0 1 3.49-3.649l.25-.09l2.36-.807l-2.36-.806a6 6 0 0 1-3.649-3.49l-.09-.25zM19 2a1 1 0 0 1 .898.56l.048.117l.35 1.026l1.027.35a1 1 0 0 1 .118 1.845l-.118.048l-1.026.35l-.35 1.027a1 1 0 0 1-1.845.117l-.048-.117l-.35-1.026l-1.027-.35a1 1 0 0 1-.118-1.845l.118-.048l1.026-.35l.35-1.027A1 1 0 0 1 19 2" />
+                </svg>
+                <span class="text-sm font-medium text-gray-900">AI optimerer teksten...</span>
+              </div>
+            </div>
+          </div>
           <p class="mt-2 text-xs text-gray-600">
             Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
           </p>
@@ -117,6 +138,118 @@
                   <div class="truncate">{{ item.file.name }}</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="group rounded-xl border bg-white" :open="scrapeOpen">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none" @click.prevent="toggleScrapeOpen">
+          <div class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2a10 10 0 1 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M22 12h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="text-sm font-medium text-gray-900">Hent indhold fra web (BETA)</div>
+          </div>
+          <svg class="h-5 w-5 text-gray-500 transition-transform" :class="scrapeOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </summary>
+
+        <div class="border-t px-4 py-4 space-y-4">
+          <div class="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            <strong>BETA:</strong> Denne funktion er i beta og vil ikke virke med alle websider. Nogle sider blokerer automatisk hentning af indhold.
+          </div>
+          <div class="grid gap-2">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input v-model="scrapeUrlInput" class="h-10 w-full rounded border bg-gray-50 px-3 text-sm" type="url" placeholder="https://example.com" />
+              <button
+                class="inline-flex items-center justify-center rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+                type="button"
+                :disabled="scraping || scrapeUrlInput.trim() === ''"
+                @click="onScrape"
+              >
+                Hent indhold
+              </button>
+            </div>
+            <div class="text-xs text-gray-600">
+              AI'en vil automatisk markere anbefalet tekst og vælge billeder. Du kan ændre valget bagefter.
+            </div>
+          </div>
+
+          <div v-if="scrapeError" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {{ scrapeError }}
+          </div>
+
+          <div v-if="scraping" class="flex items-center gap-2 text-sm text-gray-700">
+            <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
+            <span>Henter indhold...</span>
+          </div>
+
+          <div v-else-if="scrapeResult" class="space-y-4">
+            <div class="rounded border bg-blue-50 p-3 text-sm text-blue-900">
+              Tip: Markér tekst med musen for at tilføje til udvalget. Klik på markeret tekst for at fjerne markeringen.
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-medium text-gray-900">Hentet tekst ({{ selectedTextSpans.length }} markeringer)</div>
+              <button class="text-sm font-medium text-gray-700 hover:text-gray-900" type="button" @click="clearSelectedText">
+                Ryd markeringer
+              </button>
+            </div>
+
+            <div class="rounded border bg-gray-50">
+              <div
+                ref="scrapeTextBoxRef"
+                class="max-h-80 overflow-auto p-3 text-sm leading-6 text-gray-900 whitespace-pre-wrap"
+                @mouseup="onTextMouseUp"
+              >
+                <template v-for="(seg, idx) in renderedTextSegments" :key="idx">
+                  <mark
+                    v-if="seg.selected"
+                    class="bg-yellow-200 cursor-pointer"
+                    @click.prevent.stop="removeSpanByIndex(seg.start, seg.end)"
+                  >{{ seg.text }}</mark>
+                  <template v-else>{{ seg.text }}</template>
+                </template>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-sm font-medium text-gray-900">Vælg billeder - op til 5 ({{ selectedScrapeImageUrls.length }} valgt)</div>
+              <div class="mt-3 grid grid-cols-3 gap-2 md:grid-cols-6">
+                <button
+                  v-for="img in scrapeResult.images"
+                  :key="img.url"
+                  type="button"
+                  class="relative overflow-hidden rounded border bg-white"
+                  :class="selectedScrapeImageUrls.includes(img.url) ? 'ring-2 ring-purple-600' : ''"
+                  @click="toggleScrapeImage(img.url)"
+                >
+                  <img :src="img.url" class="aspect-square w-full object-cover" />
+                  <div
+                    class="absolute right-1 top-1 h-5 w-5 rounded-full border flex items-center justify-center"
+                    :class="selectedScrapeImageUrls.includes(img.url) ? 'border-purple-600 bg-purple-600' : 'border-gray-300 bg-white'"
+                  >
+                    <svg v-if="selectedScrapeImageUrls.includes(img.url)" class="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                class="inline-flex items-center justify-center rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+                type="button"
+                :disabled="applyingScrape"
+                @click="applyScrapedContent"
+              >
+                Brug valgt indhold
+              </button>
             </div>
           </div>
         </div>
@@ -244,7 +377,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { createAd, getAd, listAllowedAdSizes, refreshTokensSummary, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug } from '../lib/api'
+import { createAd, getAd, listAllowedAdSizes, optimizeText, refreshTokensSummary, scrapeUrl, tokensSummary, toAbsoluteBackendUrl, type Ad, type AdCreateDebug, type ScrapeRecommendedSpan, type ScrapeResult } from '../lib/api'
 import SpeechToTextButton from '../components/SpeechToTextButton.vue'
 
 const router = useRouter()
@@ -266,6 +399,8 @@ const showDebug = ref(false)
 const debugInfo = ref<AdCreateDebug | null>(null)
 
 const speechError = ref<string | null>(null)
+const optimizingText = ref(false)
+const optimizeError = ref<string | null>(null)
 
 const minRequiredTokens = 1000
 
@@ -273,6 +408,207 @@ type SelectedImageItem = { id: string; file: File; url: string }
 
 const selectedImageItems = ref<SelectedImageItem[]>([])
 const dragSourceId = ref<string | null>(null)
+
+const scrapeOpen = ref(false)
+const scrapeUrlInput = ref('')
+const scraping = ref(false)
+const scrapeError = ref<string | null>(null)
+const scrapeResult = ref<ScrapeResult | null>(null)
+const selectedTextSpans = ref<ScrapeRecommendedSpan[]>([])
+const selectedScrapeImageUrls = ref<string[]>([])
+const applyingScrape = ref(false)
+
+const scrapeTextBoxRef = ref<HTMLElement | null>(null)
+
+function toggleScrapeOpen() {
+  scrapeOpen.value = !scrapeOpen.value
+}
+
+function clearSelectedText() {
+  selectedTextSpans.value = []
+}
+
+function normalizeSpan(span: ScrapeRecommendedSpan): ScrapeRecommendedSpan {
+  const start = Math.max(0, Math.floor(Number(span.start)))
+  const end = Math.max(start, Math.floor(Number(span.end)))
+  return { start, end }
+}
+
+function addSpan(next: ScrapeRecommendedSpan) {
+  const normalized = normalizeSpan(next)
+  if (normalized.end <= normalized.start) return
+
+  const spans = [...selectedTextSpans.value, normalized]
+    .map(normalizeSpan)
+    .filter((s) => s.end > s.start)
+    .sort((a, b) => a.start - b.start)
+
+  const merged: ScrapeRecommendedSpan[] = []
+  for (const s of spans) {
+    const last = merged[merged.length - 1]
+    if (!last) {
+      merged.push({ ...s })
+      continue
+    }
+    if (s.start <= last.end) {
+      last.end = Math.max(last.end, s.end)
+      continue
+    }
+    merged.push({ ...s })
+  }
+  selectedTextSpans.value = merged
+}
+
+function removeSpanByIndex(start: number, end: number) {
+  selectedTextSpans.value = selectedTextSpans.value.filter((s) => !(s.start === start && s.end === end))
+}
+
+function getOffsetFromNode(root: Node, node: Node, nodeOffset: number): number {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let offset = 0
+  let current = walker.nextNode()
+  while (current) {
+    if (current === node) {
+      return offset + nodeOffset
+    }
+    offset += current.textContent?.length ?? 0
+    current = walker.nextNode()
+  }
+  return offset
+}
+
+function onTextMouseUp() {
+  const root = scrapeTextBoxRef.value
+  if (!root) return
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount < 1) return
+  const range = sel.getRangeAt(0)
+  if (!range || range.collapsed) return
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return
+
+  const start = getOffsetFromNode(root, range.startContainer, range.startOffset)
+  const end = getOffsetFromNode(root, range.endContainer, range.endOffset)
+  const a = Math.min(start, end)
+  const b = Math.max(start, end)
+  addSpan({ start: a, end: b })
+  sel.removeAllRanges()
+}
+
+const renderedTextSegments = computed(() => {
+  const full = String(scrapeResult.value?.full_text ?? '')
+  const spans = [...selectedTextSpans.value].sort((a, b) => a.start - b.start)
+  const out: { text: string; selected: boolean; start: number; end: number }[] = []
+  let cursor = 0
+  for (const s of spans) {
+    const start = Math.max(0, Math.min(full.length, s.start))
+    const end = Math.max(start, Math.min(full.length, s.end))
+    if (start > cursor) {
+      out.push({ text: full.slice(cursor, start), selected: false, start: cursor, end: start })
+    }
+    if (end > start) {
+      out.push({ text: full.slice(start, end), selected: true, start, end })
+    }
+    cursor = end
+  }
+  if (cursor < full.length) {
+    out.push({ text: full.slice(cursor), selected: false, start: cursor, end: full.length })
+  }
+  return out
+})
+
+async function onScrape() {
+  const url = scrapeUrlInput.value.trim()
+  if (url === '') return
+
+  scraping.value = true
+  scrapeError.value = null
+  scrapeResult.value = null
+  selectedTextSpans.value = []
+  selectedScrapeImageUrls.value = []
+
+  try {
+    const res = await scrapeUrl(url)
+    scrapeResult.value = res.result
+    const spans = (res.recommended_text_spans ?? []).map((s) => ({ start: Number(s.start), end: Number(s.end) }))
+    selectedTextSpans.value = spans
+
+    const imageUrls = (res.result.images ?? []).map((x) => x.url).filter((x) => typeof x === 'string' && x.trim() !== '')
+    selectedScrapeImageUrls.value = imageUrls.slice(0, 3)
+  } catch (e: any) {
+    console.error('Scrape error:', e)
+    const errorMessage = e?.response?.data?.message || e?.message || 'Kunne ikke hente indhold fra URL'
+    scrapeError.value = errorMessage
+  } finally {
+    scraping.value = false
+  }
+}
+
+function toggleScrapeImage(url: string) {
+  const idx = selectedScrapeImageUrls.value.indexOf(url)
+  if (idx >= 0) {
+    selectedScrapeImageUrls.value = selectedScrapeImageUrls.value.filter((x) => x !== url)
+    return
+  }
+  if (selectedScrapeImageUrls.value.length >= 5) return
+  selectedScrapeImageUrls.value = [...selectedScrapeImageUrls.value, url]
+}
+
+async function downloadAsFile(url: string, idx: number): Promise<File | null> {
+  try {
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`
+    const res = await fetch(proxyUrl)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    const contentType = blob.type || 'image/jpeg'
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg'
+    return new File([blob], `scraped-${idx + 1}.${ext}`, { type: contentType })
+  } catch {
+    return null
+  }
+}
+
+async function applyScrapedContent() {
+  if (!scrapeResult.value) return
+  applyingScrape.value = true
+  try {
+    const full = String(scrapeResult.value.full_text ?? '')
+    const spans = [...selectedTextSpans.value].sort((a, b) => a.start - b.start)
+    const parts: string[] = []
+    for (const s of spans) {
+      const start = Math.max(0, Math.min(full.length, s.start))
+      const end = Math.max(start, Math.min(full.length, s.end))
+      const chunk = full.slice(start, end).trim()
+      if (chunk !== '') parts.push(chunk)
+    }
+    if (parts.length > 0) {
+      text.value = parts.join('\n\n')
+    }
+
+    const maxImages = 5
+    const availableSlots = maxImages - selectedImageItems.value.length
+    if (availableSlots > 0) {
+      const imageUrls = selectedScrapeImageUrls.value.slice(0, availableSlots)
+      const downloadResults = await Promise.all(imageUrls.map((u, idx) => downloadAsFile(u, idx)))
+      const files = downloadResults.filter((x): x is File => x instanceof File)
+
+      const timestamp = Date.now()
+      const newItems = files.map((file, idx) => {
+        const blobUrl = URL.createObjectURL(file)
+        return {
+          id: `${timestamp}-${idx}`,
+          file,
+          url: blobUrl,
+        }
+      })
+
+      selectedImageItems.value = [...selectedImageItems.value, ...newItems]
+    }
+
+    scrapeOpen.value = false
+  } finally {
+    applyingScrape.value = false
+  }
+}
 
 type SizePresetOption = { value: string; label: string; width: number; height: number }
 
@@ -356,8 +692,27 @@ function onDrop(targetId: string) {
   dragSourceId.value = null
 }
 
-function onSpeechError(message: string) {
-  speechError.value = message
+function onSpeechError(error: string) {
+  speechError.value = error
+}
+
+async function onOptimizeText() {
+  const currentText = text.value.trim()
+  if (currentText === '') return
+
+  optimizingText.value = true
+  optimizeError.value = null
+  speechError.value = null
+
+  try {
+    const result = await optimizeText(currentText)
+    text.value = result.optimized
+  } catch (e) {
+    optimizeError.value = e instanceof Error ? e.message : 'Kunne ikke optimere teksten.'
+    speechError.value = optimizeError.value
+  } finally {
+    optimizingText.value = false
+  }
 }
 
 const selectedImages = computed(() => selectedImageItems.value.map((x) => x.file))

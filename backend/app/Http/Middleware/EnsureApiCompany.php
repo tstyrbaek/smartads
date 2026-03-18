@@ -21,26 +21,39 @@ class EnsureApiCompany
         $headerCompanyId = $request->header('X-Company-Id');
         $activeCompanyId = $headerCompanyId !== null ? (int) $headerCompanyId : 0;
 
-        if ($activeCompanyId > 0) {
-            if (!$user->companies()->whereKey($activeCompanyId)->exists()) {
-                abort(403);
+        try {
+            if ($activeCompanyId > 0) {
+                if (!$user->companies()->whereKey($activeCompanyId)->exists()) {
+                    abort(403);
+                }
+
+                $request->attributes->set('active_company_id', $activeCompanyId);
+
+                return $next($request);
             }
 
-            $request->attributes->set('active_company_id', $activeCompanyId);
+            $companyIds = $user->companies()->pluck('companies.id')->all();
 
-            return $next($request);
+            if (count($companyIds) === 1) {
+                $request->attributes->set('active_company_id', (int) $companyIds[0]);
+
+                return $next($request);
+            }
+
+            return response()->json([
+                'error' => 'company_required',
+            ], 422);
+        } catch (\Throwable $e) {
+            \Log::error('EnsureApiCompany middleware failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'company_id' => $activeCompanyId,
+            ]);
+            
+            return response()->json([
+                'error' => 'database_error',
+                'message' => 'Database forbindelse fejlede. Kontakt support.',
+            ], 500);
         }
-
-        $companyIds = $user->companies()->pluck('companies.id')->all();
-
-        if (count($companyIds) === 1) {
-            $request->attributes->set('active_company_id', (int) $companyIds[0]);
-
-            return $next($request);
-        }
-
-        return response()->json([
-            'error' => 'company_required',
-        ], 422);
     }
 }

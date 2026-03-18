@@ -1,18 +1,21 @@
 <template>
   <div class="space-y-6">
-    <form @submit.prevent="onSubmit" class="space-y-6">
-      <div class="grid gap-6 rounded-lg border bg-white p-4">
-        <div>
+
+     <div>
           <h2 class="text-lg font-semibold">Firmaoplysninger</h2>
-          <p class="mt-1 text-sm text-gray-600">Beskriv dit firma og din målgruppe, så AI'en kan skrive bedre annoncetekster.</p>
+          <p class="mt-1 text-sm text-gray-600">Beskriv dit firma og branding</p>
         </div>
+
+    <form @submit.prevent="onSubmit" class="space-y-6">
+      <div class="grid gap-6 rounded-xl border bg-white p-4">
+       
 
         <div class="grid gap-2">
           <label class="text-sm font-medium" for="companyName">Firmanavn</label>
           <input
             id="companyName"
             v-model="state.companyName"
-            class="w-full rounded border px-3 py-2"
+            class="w-full rounded border bg-gray-50 px-3 py-2"
             required
           />
           <p class="text-xs text-gray-600">Dit officielle firmanavn.</p>
@@ -23,7 +26,7 @@
           <input
             id="websiteUrl"
             v-model="state.websiteUrl"
-            class="w-full rounded border px-3 py-2"
+            class="w-full rounded border bg-gray-50 px-3 py-2"
             type="url"
             placeholder="https://..."
           />
@@ -35,7 +38,7 @@
           <textarea
             id="companyDescription"
             v-model="state.companyDescription"
-            class="min-h-24 w-full rounded border px-3 py-2"
+            class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
           ></textarea>
           <p class="text-xs text-gray-600">Beskriv kort, hvad dit firma laver. Bruges af AI'en til at skrive annoncetekster.</p>
         </div>
@@ -45,36 +48,36 @@
           <textarea
             id="audienceDescription"
             v-model="state.audienceDescription"
-            class="min-h-24 w-full rounded border px-3 py-2"
+            class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
           ></textarea>
           <p class="text-xs text-gray-600">Hvem er dine kunder? Beskriv dem her, så AI'en kan ramme den rigtige tone.</p>
         </div>
       </div>
 
-      <details class="group grid gap-6 rounded-lg border bg-white p-4" open>
-        <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold">Branding</h2>
-              <p class="mt-1 text-sm text-gray-600">Definér farver, logo og øvrige branding-elementer.</p>
-            </div>
-
-            <svg
-              class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                clip-rule="evenodd"
-              />
-            </svg>
+      <details class="group rounded-xl border bg-white" open>
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 select-none">
+          <div>
+            <h2 class="text-lg font-semibold">Branding</h2>
+            <p class="mt-1 text-sm text-gray-600">Definér farver, logo og øvrige branding-elementer.</p>
           </div>
+
+          <svg
+            class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+              clip-rule="evenodd"
+            />
+          </svg>
         </summary>
 
-        <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
+        <div class="grid gap-6 border-t px-4 py-4">
+
+        <fieldset class="grid gap-4 rounded-xl border bg-gray-50 p-4">
           <div>
             <legend class="text-sm font-semibold text-gray-900">Farver</legend>
             <p class="mt-1 text-xs text-gray-600">Vælg 2 primære farver og (valgfrit) 2 sekundære farver.</p>
@@ -118,7 +121,7 @@
           <input
             id="fonts"
             v-model="state.fonts"
-            class="w-full rounded border px-3 py-2"
+            class="w-full rounded border bg-gray-50 px-3 py-2"
           />
           <p class="text-xs text-gray-600">Angiv navnene på dine brand-skrifttyper, f.eks. 'Montserrat' eller 'Lato'.</p>
         </div>
@@ -128,7 +131,7 @@
           <input
             id="slogan"
             v-model="state.slogan"
-            class="w-full rounded border px-3 py-2"
+            class="w-full rounded border bg-gray-50 px-3 py-2"
           />
           <p class="text-xs text-gray-600">Dit firmas officielle slogan eller tagline.</p>
         </div>
@@ -138,38 +141,38 @@
           <textarea
             id="visual_guidelines"
             v-model="state.visual_guidelines"
-            class="min-h-24 w-full rounded border px-3 py-2"
+            class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
           ></textarea>
           <p class="text-xs text-gray-600">Her kan du beskrive specifikke ønsker til det visuelle udtryk. F.eks. 'Brug altid en lys baggrund' eller 'Placer logoet i øverste højre hjørne'.</p>
         </div>
+        </div>
       </details>
 
-      <details class="group grid gap-6 rounded-lg border bg-white p-4">
-        <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold">Integrationer</h2>
-              <p class="mt-1 text-sm text-gray-600">Opret og administrér integrationer (fx website embed).</p>
-            </div>
-
-            <svg
-              class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                clip-rule="evenodd"
-              />
-            </svg>
+      <details class="group rounded-xl border bg-white">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 select-none">
+          <div>
+            <h2 class="text-lg font-semibold">Integrationer</h2>
+            <p class="mt-1 text-sm text-gray-600">Opret og administrér integrationer (fx website embed).</p>
           </div>
+
+          <svg
+            class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+              clip-rule="evenodd"
+            />
+          </svg>
         </summary>
 
-        <div v-if="integrationsLoading" class="text-sm text-gray-600">Indlæser...</div>
+        <div class="grid gap-6 border-t px-4 py-4">
+          <div v-if="integrationsLoading" class="text-sm text-gray-600">Indlæser...</div>
 
-        <div v-else class="grid gap-4">
+          <div v-else class="grid gap-4">
           <div class="flex items-center justify-between gap-3">
             <div class="text-sm text-gray-700">
               Integrationer bruges som targets, når du publicerer en annonce.
@@ -199,7 +202,7 @@
               <select
                 id="integrationKey"
                 v-model="integrationForm.integrationKey"
-                class="w-full rounded border px-3 py-2"
+                class="w-full rounded border bg-gray-50 px-3 py-2"
               >
                 <option v-for="def in integrationDefinitions" :key="def.key" :value="def.key">
                   {{ def.name }}
@@ -209,7 +212,7 @@
 
             <div v-if="!isNetworkWebsiteEmbed" class="grid gap-2">
               <label class="text-sm font-medium" for="integrationName">Navn</label>
-              <input id="integrationName" v-model="integrationForm.name" class="w-full rounded border px-3 py-2" />
+              <input id="integrationName" v-model="integrationForm.name" class="w-full rounded border bg-gray-50 px-3 py-2" />
             </div>
             <div v-else class="grid gap-2">
               <div class="text-sm font-medium text-gray-700">Navn</div>
@@ -262,7 +265,7 @@
 
               <div v-if="facebookPages.length > 0" class="grid gap-2">
                 <label class="text-sm font-medium" for="facebookPageSelect">Vælg side</label>
-                <select id="facebookPageSelect" v-model="facebookSelectedPageId" class="w-full rounded border px-3 py-2">
+                <select id="facebookPageSelect" v-model="facebookSelectedPageId" class="w-full rounded border bg-gray-50 px-3 py-2">
                   <option value="" disabled>Vælg...</option>
                   <option v-for="p in facebookPages" :key="p.id" :value="p.id">{{ p.name }}</option>
                 </select>
@@ -286,7 +289,7 @@
 
               <div class="grid gap-2">
                 <label class="text-sm font-medium" for="embedAdSize">Annonceformat</label>
-                <select id="embedAdSize" v-model="integrationForm.adSize" class="w-full rounded border px-3 py-2">
+                <select id="embedAdSize" v-model="integrationForm.adSize" class="w-full rounded border bg-gray-50 px-3 py-2">
                   <option value="">Ingen krav</option>
                   <option v-for="s in allowedAdSizes" :key="`${s.width}x${s.height}`" :value="`${s.width}x${s.height}`">
                     {{ s.width }}×{{ s.height }}
@@ -297,7 +300,7 @@
 
               <div class="grid gap-2">
                 <label class="text-sm font-medium" for="embedViewMode">Visning</label>
-                <select id="embedViewMode" v-model="integrationForm.viewMode" class="w-full rounded border px-3 py-2">
+                <select id="embedViewMode" v-model="integrationForm.viewMode" class="w-full rounded border bg-gray-50 px-3 py-2">
                   <option value="grid">Grid</option>
                   <option value="slideshow">Slideshow</option>
                 </select>
@@ -307,7 +310,7 @@
               <div v-if="integrationForm.viewMode === 'slideshow'" class="grid gap-4 rounded border bg-gray-50 p-4">
                 <div class="grid gap-2">
                   <label class="text-sm font-medium" for="embedItemsPerView">Antal synlige</label>
-                  <select id="embedItemsPerView" v-model.number="integrationForm.slideshowItemsPerView" class="w-full rounded border px-3 py-2">
+                  <select id="embedItemsPerView" v-model.number="integrationForm.slideshowItemsPerView" class="w-full rounded border bg-gray-50 px-3 py-2">
                     <option v-for="n in 6" :key="n" :value="n">{{ n }}</option>
                   </select>
                   <p v-if="slideshowItemsPerViewError" class="text-xs text-red-600">{{ slideshowItemsPerViewError }}</p>
@@ -318,7 +321,7 @@
                   <input
                     id="embedInterval"
                     v-model.number="integrationForm.slideshowIntervalMs"
-                    class="w-full rounded border px-3 py-2"
+                    class="w-full rounded border bg-gray-50 px-3 py-2"
                     type="number"
                     min="1500"
                     max="20000"
@@ -331,7 +334,7 @@
 
               <div class="grid gap-2">
                 <label class="text-sm font-medium" for="embedToken">Embed token</label>
-                <input id="embedToken" v-model="integrationForm.embedToken" class="w-full rounded border px-3 py-2 font-mono text-xs" />
+                <input id="embedToken" v-model="integrationForm.embedToken" class="w-full rounded border bg-gray-50 px-3 py-2 font-mono text-xs" />
               </div>
 
               <div v-if="integrationForm.id" class="grid gap-2">
@@ -339,7 +342,7 @@
                 <textarea
                   id="embedCode"
                   readonly
-                  class="min-h-16 w-full rounded border px-3 py-2 font-mono text-xs"
+                  class="min-h-16 w-full rounded border bg-gray-50 px-3 py-2 font-mono text-xs"
                   :value="getEmbedCode(integrationForm.id)"
                 ></textarea>
               </div>
@@ -377,7 +380,7 @@
               v-for="inst in integrationInstances"
               :key="inst.id"
               type="button"
-              class="flex items-start justify-between gap-4 rounded border bg-white p-4 text-left hover:bg-gray-50"
+              class="flex items-start justify-between gap-4 rounded-xl border bg-white p-4 text-left hover:bg-gray-50"
               @click="startEditIntegration(inst)"
             >
               <div class="min-w-0">
@@ -398,33 +401,34 @@
             </button>
           </div>
         </div>
+        </div>
       </details>
 
-      <details class="group grid gap-6 rounded-lg border bg-white p-4">
-        <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold">Abonnement</h2>
-              <p class="mt-1 text-sm text-gray-600">Overblik over din nuværende pakke og dit token-forbrug denne måned.</p>
-            </div>
-
-            <svg
-              class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                clip-rule="evenodd"
-              />
-            </svg>
+      <details class="group rounded-xl border bg-white">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 select-none">
+          <div>
+            <h2 class="text-lg font-semibold">Abonnement</h2>
+            <p class="mt-1 text-sm text-gray-600">Overblik over din nuværende pakke og dit token-forbrug denne måned.</p>
           </div>
+
+          <svg
+            class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+              clip-rule="evenodd"
+            />
+          </svg>
         </summary>
 
+        <div class="grid gap-6 border-t px-4 py-4">
+
         <div class="grid gap-4 md:grid-cols-2">
-          <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
+          <fieldset class="grid gap-4 rounded-xl border bg-gray-50 p-4">
             <div>
               <legend class="text-sm font-semibold text-gray-900">Subscription</legend>
             </div>
@@ -462,7 +466,7 @@
             <div v-else class="text-sm text-gray-600">Indlæser...</div>
           </fieldset>
 
-          <fieldset class="grid gap-4 rounded border bg-gray-50 p-4">
+          <fieldset class="grid gap-4 rounded-xl border bg-gray-50 p-4">
             <div>
               <legend class="text-sm font-semibold text-gray-900">Tokens (denne måned)</legend>
             </div>
@@ -505,6 +509,7 @@
             <div v-else class="text-sm text-gray-600">Indlæser...</div>
           </fieldset>
         </div>
+        </div>
       </details>
 
       <div class="flex items-center gap-3">
@@ -519,7 +524,7 @@
       </div>
     </form>
 
-    <div class="rounded-lg border bg-white p-4">
+    <div class="rounded-xl border bg-white p-4">
       <div class="flex items-center justify-between">
         <div class="text-sm font-medium">Preview</div>
         <div class="flex gap-2">

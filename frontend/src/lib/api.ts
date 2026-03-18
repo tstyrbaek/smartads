@@ -422,6 +422,36 @@ export type AdCreateDebug = {
   geminiRequest?: Record<string, unknown>
 }
 
+export type ScrapeRecommendedSpan = { start: number; end: number }
+
+export type ScrapeResult = {
+  url: string
+  source: string | null
+  title: string | null
+  description: string | null
+  structured: Record<string, unknown>
+  images: { url: string }[]
+  full_text: string
+}
+
+export async function scrapeUrl(url: string): Promise<{ ok: true; result: ScrapeResult; recommended_text_spans: ScrapeRecommendedSpan[] }> {
+  const res = await apiFetch('/api/scrape', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  return (await res.json()) as { ok: true; result: ScrapeResult; recommended_text_spans: ScrapeRecommendedSpan[] }
+}
+
+export async function optimizeText(text: string): Promise<{ ok: true; original: string; optimized: string }> {
+  const res = await apiFetch('/api/optimize-text', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  return (await res.json()) as { ok: true; original: string; optimized: string }
+}
+
 export async function createAd(
   text: string,
   opts?: {
