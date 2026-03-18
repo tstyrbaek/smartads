@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { registerSW } from 'virtual:pwa-register'
 import App from './App.vue'
 import BrandPage from './pages/BrandPage.vue'
 import AdPage from './pages/AdPage.vue'
@@ -13,8 +14,12 @@ import ProfilePage from './pages/ProfilePage.vue'
 import { authToken } from './lib/api'
 import './styles.css'
 
+registerSW({
+  immediate: true,
+})
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/app/'),
   routes: [
     { path: '/login', component: LoginPage },
     { path: '/reset-password', component: ResetPasswordPage },

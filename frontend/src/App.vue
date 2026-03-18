@@ -3,7 +3,9 @@
     <header class="border-b bg-white fixed top-0 left-0 right-0 z-50">
       <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
         <div class="flex items-center gap-2">
-          <RouterLink to="/" class="font-semibold text-2xl text-green-600">SmartAds</RouterLink>
+          <RouterLink to="/" class="inline-flex items-center" aria-label="SmartAds">
+            <img :src="smartAdsLogo" alt="SmartAds" class="h-6 w-auto" />
+          </RouterLink>
           <div v-if="isAuthenticated && activeCompanyName" class="text-sm text-gray-600">
             <span class="text-gray-400">/</span>
             <span class="ml-2">{{ activeCompanyName }}</span>
@@ -129,6 +131,8 @@ import { activeCompanyId, authToken, getMe, logout, refreshTokensSummary, tokens
 import NoticeStack from './components/NoticeStack.vue'
 import { notices, removeNotice, replaceNoticesBySource, setNotice, type Notice } from './lib/notices'
 import { getNotifications, type NotificationsResponse } from './lib/api'
+
+import smartAdsLogo from './assets/smartads_logo.svg'
 
 const router = useRouter()
 const isAuthenticated = computed(() => Boolean(authToken.value))
