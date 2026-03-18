@@ -1,77 +1,98 @@
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-xl font-semibold">Opret annonce</h1>
+      <div class="flex items-center gap-2">
+        <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M12 2l1.2 3.7c.3 1 1.1 1.8 2.1 2.1L19 9l-3.7 1.2c-1 .3-1.8 1.1-2.1 2.1L12 16l-1.2-3.7c-.3-1-1.1-1.8-2.1-2.1L5 9l3.7-1.2c1-.3 1.8-1.1 2.1-2.1L12 2z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M19 14l.7 2.1c.2.6.6 1.1 1.2 1.2L23 18l-2.1.7c-.6.2-1.1.6-1.2 1.2L19 22l-.7-2.1c-.2-.6-.6-1.1-1.2-1.2L15 18l2.1-.7c.6-.2 1.1-.6 1.2-1.2L19 14z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <h1 class="text-xl font-semibold">Opret annonce</h1>
+      </div>
       <p class="mt-1 text-sm text-gray-600">Upload billeder og skriv en tekst for at generere en ny annonce.</p>
     </div>
 
-    <div class="grid gap-4 rounded-lg border bg-white p-4">
-      <div class="grid gap-2">
-        <div class="flex items-center justify-between gap-3">
-          <label class="text-sm font-medium" for="text">Annonce tekst</label>
-          <SpeechToTextButton v-model="text" @error="onSpeechError" />
-        </div>
-        <textarea id="text" v-model="text" class="min-h-[18rem] w-full rounded border px-3 py-2"></textarea>
-        <p class="text-xs text-gray-600">
-          Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
-        </p>
+    <div class="space-y-4">
+      <div class="flex items-center justify-end gap-3">
+        <svg class="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <path d="M10 9H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <path d="M10 13H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <path d="M20 4v6h-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M20 10a8 8 0 0 1-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <div class="text-sm font-medium text-gray-900">Annonce størrelse:</div>
+        <label class="sr-only" for="sizePreset">Format</label>
+        <select id="sizePreset" v-model="sizePreset" class="h-9 rounded-lg border bg-white px-3 text-sm">
+          <option v-for="opt in sizePresetOptions" :key="opt.value" :value="opt.value">{{ opt.label }} px</option>
+        </select>
       </div>
 
-      <details class="rounded p-3">
-        <summary class="cursor-pointer select-none text-sm font-medium text-gray-900">
-          Instrukser til AI (valgfrit)
-        </summary>
-        <div class="mt-3 grid gap-2">
-          <div class="flex items-center justify-between gap-3">
-            <label class="text-sm font-medium" for="instructions">Instrukser</label>
-            <SpeechToTextButton v-model="instructions" @error="onSpeechError" />
+      <div class="rounded-xl border bg-white">
+        <div class="flex items-center justify-between gap-3 px-4 py-3">
+          <div class="text-sm font-medium text-gray-900">Annonce tekst</div>
+          <div class="flex items-center gap-2">
+            <SpeechToTextButton v-model="text" @error="onSpeechError" />
           </div>
-          <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border bg-white px-3 py-2"></textarea>
-          <p class="text-xs text-gray-600">
-            Beskriv hvordan annoncen skal se ud. Fx "minimalistisk", "ingen mennesker", "stort CTA", "lys baggrund".
+        </div>
+        <div class="border-t px-4 py-4">
+          <textarea id="text" v-model="text" class="min-h-[14rem] w-full rounded border bg-gray-50 px-3 py-2"></textarea>
+          <p class="mt-2 text-xs text-gray-600">
+            Skriv den tekst der skal stå på annoncen. AI'en må ikke ændre teksten, så tjek stavning og tegnsætning.
           </p>
         </div>
-      </details>
-
-      <div class="grid gap-2">
-        <label class="text-sm font-medium" for="targetUrl">Target URL (valgfrit)</label>
-        <input id="targetUrl" v-model="targetUrl" class="w-full rounded border px-3 py-2" type="url" placeholder="https://..." />
-        <p class="text-xs text-gray-600">Hvis angivet, bruges linket i embed i stedet for virksomhedens website.</p>
       </div>
 
-      <div class="rounded border bg-gray-50 p-3">
-        <div class="grid gap-2">
-          <div class="text-sm font-medium text-gray-900">Annonce størrelse (px)</div>
-          <div class="grid gap-1">
-            <label class="sr-only" for="sizePreset">Format</label>
-            <select id="sizePreset" v-model="sizePreset" class="w-full rounded border bg-white px-3 py-2">
-              <option v-for="opt in sizePresetOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
+      <details class="group rounded-xl border bg-white">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none">
+          <div class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 7h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M4 12h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <div class="text-sm font-medium text-gray-900">Billeder ({{ selectedImageItems.length }}/5)</div>
           </div>
-          <div class="text-xs text-gray-600">Størrelse: {{ imageWidth }}×{{ imageHeight }} px</div>
-        </div>
-      </div>
-
-      <div v-if="speechError" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-        {{ speechError }}
-      </div>
-
-      <div class="rounded border bg-gray-50 p-3">
-        <div class="grid gap-2">
-          <label class="text-sm font-medium" for="images">Billeder til annoncen (op til 5)</label>
+          <svg class="h-5 w-5 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </summary>
+        <div class="border-t px-4 py-4">
           <input
             id="images"
-            class="w-full"
+            class="sr-only"
             type="file"
             accept=".png,.jpg,.jpeg,.webp"
             multiple
             @change="onImages"
           />
-          <p class="text-xs text-gray-600">
-            Upload billeder der skal bruges i annoncen.
-          </p>
+          <label
+            for="images"
+            class="flex min-h-[9.5rem] w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 px-4 text-center hover:bg-gray-100"
+          >
+            <div class="grid justify-items-center gap-2">
+              <svg class="h-8 w-8 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M9 11l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M20 16.5a4.5 4.5 0 0 0-4.5-4.5h-1.1A6 6 0 1 0 6 18h10.5A3.5 3.5 0 0 0 20 16.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div class="text-sm font-medium text-gray-700">Upload billeder</div>
+              <div class="text-xs text-gray-600">Klik for at vælge eller træk og slip</div>
+            </div>
+          </label>
 
-          <div v-if="selectedImageItems.length" class="grid gap-2">
+          <p class="mt-2 text-xs text-gray-600">Upload billeder der skal bruges i annoncen.</p>
+
+          <div v-if="selectedImageItems.length" class="mt-4 grid gap-2">
             <div class="text-xs text-gray-600">Træk og slip for at ændre rækkefølgen (1 = primær).</div>
             <div class="grid grid-cols-3 gap-2 md:grid-cols-6">
               <div
@@ -99,11 +120,66 @@
             </div>
           </div>
         </div>
+      </details>
+
+      <details class="group rounded-xl border bg-white">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none">
+          <div class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M12 2l1.2 3.7c.3 1 1.1 1.8 2.1 2.1L19 9l-3.7 1.2c-1 .3-1.8 1.1-2.1 2.1L12 16l-1.2-3.7c-.3-1-1.1-1.8-2.1-2.1L5 9l3.7-1.2c1-.3 1.8-1.1 2.1-2.1L12 2z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div class="text-sm font-medium text-gray-900">Instrukser til AI (valgfrit)</div>
+          </div>
+          <svg class="h-5 w-5 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </summary>
+        <div class="border-t px-4 py-4">
+          <div class="grid gap-2">
+            <div class="flex items-center justify-between gap-3">
+              <label class="text-sm font-medium" for="instructions">Instrukser</label>
+              <SpeechToTextButton v-model="instructions" @error="onSpeechError" />
+            </div>
+            <textarea id="instructions" v-model="instructions" class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"></textarea>
+            <p class="text-xs text-gray-600">
+              Beskriv hvordan annoncen skal se ud. Fx "minimalistisk", "ingen mennesker", "stort CTA", "lys baggrund".
+            </p>
+          </div>
+        </div>
+      </details>
+
+      <details class="group rounded-xl border bg-white">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none">
+          <div class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7.1-7.1l-1.2 1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 1 0 7.1 7.1l1.2-1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="text-sm font-medium text-gray-900">Annoncelink (valgfrit)</div>
+          </div>
+          <svg class="h-5 w-5 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </summary>
+        <div class="border-t px-4 py-4">
+          <div class="grid gap-2">
+            <input id="targetUrl" v-model="targetUrl" class="w-full rounded border bg-gray-50 px-3 py-2" type="url" placeholder="https://..." />
+            <p class="text-xs text-gray-600">Hvis angivet, bruges linket i embed i stedet for virksomhedens website.</p>
+          </div>
+        </div>
+      </details>
+
+      <div v-if="speechError" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        {{ speechError }}
       </div>
 
       <div class="space-y-3">
         <div class="flex flex-col-reverse sm:flex-row gap-3">
-
           <button
             class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
             :disabled="creating || !canCreateAd || !canSubmit"
