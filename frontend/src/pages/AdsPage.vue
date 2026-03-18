@@ -9,7 +9,7 @@
       <div class="mt-4 md:mt-0">
         <RouterLink
           v-if="canCreateAd"
-          class="flex w-full justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 md:w-auto"
+          class="flex w-full justify-center rounded-2xl bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 md:w-auto"
           to="/ads/new"
         >
           Opret annonce
@@ -17,7 +17,7 @@
 
         <div v-else class="space-y-2">
           <button
-            class="flex w-full cursor-not-allowed justify-center rounded bg-green-600 px-4 py-2 text-sm font-medium text-white opacity-50 md:w-auto"
+            class="flex w-full cursor-not-allowed justify-center rounded-2xl bg-green-600 px-4 py-2 text-sm font-medium text-white opacity-50 md:w-auto"
             type="button"
             disabled
           >

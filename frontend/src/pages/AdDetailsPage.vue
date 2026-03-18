@@ -21,7 +21,11 @@
       <div class="rounded-lg border bg-white p-4">
         <div class="text-sm font-medium text-gray-900">Preview</div>
         <div class="mt-3">
-          <img v-if="ad.localFilePath" :src="toAbsoluteBackendUrl(ad.localFilePath)" class="w-full rounded border bg-gray-50" />
+          <img
+            v-if="ad.localFilePath"
+            :src="toAbsoluteBackendUrl(ad.localFilePath)"
+            class="block w-full h-auto max-w-full rounded border bg-gray-50 object-contain"
+          />
           <div v-else class="rounded border bg-gray-50 p-6 text-sm text-gray-700">Intet preview endnu.</div>
         </div>
 
@@ -200,7 +204,6 @@
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
                     <div class="truncate text-sm font-medium text-gray-900">{{ inst.name }}</div>
-                    <div class="text-xs text-gray-600">{{ inst.integration_key }}</div>
                   </div>
                   <div class="text-right">
                     <div class="text-xs text-gray-600">

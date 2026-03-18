@@ -2,13 +2,12 @@
   <div class="min-h-screen bg-gray-50 text-gray-900">
     <header class="border-b bg-white fixed top-0 left-0 right-0 z-50">
       <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
           <RouterLink to="/" class="inline-flex items-center" aria-label="SmartAds">
             <img :src="smartAdsLogo" alt="SmartAds" class="h-6 w-auto" />
           </RouterLink>
-          <div v-if="isAuthenticated && activeCompanyName" class="text-sm text-gray-600">
-            <span class="text-gray-400">/</span>
-            <span class="ml-2">{{ activeCompanyName }}</span>
+          <div v-if="isAuthenticated && activeCompanyName" class="text-sm text-gray-600 sm:ml-2">
+            {{ activeCompanyName }}
           </div>
         </div>
         <div v-if="isAuthenticated" class="flex items-center gap-2">
@@ -58,14 +57,14 @@
               <RouterLink class="block rounded px-3 py-2 hover:bg-gray-100" to="/profile" role="menuitem">
                 Profil
               </RouterLink>
-              <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
+              <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Annoncør</RouterLink>
               <RouterLink
                 v-if="(me?.companies?.length ?? 0) > 1"
                 class="block rounded px-3 py-2 hover:bg-gray-100"
                 to="/select-company"
                 role="menuitem"
               >
-                Skift company
+                Skift annoncør
               </RouterLink>
 
               <button
@@ -108,7 +107,6 @@
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="md:hidden border-t">
         <nav class="flex flex-col p-4 text-sm" @click="mobileMenuOpen = false">
-          <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/company">Forretning</RouterLink>
           <RouterLink class="rounded px-3 py-2 hover:bg-gray-100" to="/ads">Annoncer</RouterLink>
         </nav>
       </div>
