@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <details class="group rounded-xl border bg-white" open>
+      <details class="group rounded-xl border bg-white">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 select-none">
           <div>
             <h2 class="text-lg font-semibold">Branding</h2>
@@ -103,17 +103,19 @@
           </div>
         </fieldset>
 
-        <div class="grid gap-2">
-          <label class="text-sm font-medium" for="logo">Logo (jpg/png/webp)</label>
-          <input id="logo" class="w-full" type="file" accept=".png,.jpg,.jpeg,.svg,.webp" @change="onFile" />
-          <p class="text-xs text-gray-600">Upload dit logo. Kvadratiske formater virker bedst.</p>
-        </div>
-
-        <div class="grid gap-2">
-          <label class="text-sm font-medium" for="template">Design template (png/jpg/webp/pdf)</label>
-          <input id="template" class="w-full" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" @change="onTemplateFile" />
-          <p class="text-xs text-gray-600">Upload en reference til designstil (farver/typografi/layout). Bruges som stil-reference af AI'en.</p>
-          <a v-if="templateUrl" class="text-xs text-blue-700 hover:underline" :href="templateUrl" target="_blank" rel="noreferrer">Se nuværende template</a>
+        <div class="grid gap-4 rounded border border-gray-200 p-3 md:grid-cols-2 md:items-start">
+          <div class="grid gap-2">
+            <label class="text-sm font-medium" for="logo">Logo (jpg/png/webp)</label>
+            <input id="logo" class="w-full" type="file" accept=".png,.jpg,.jpeg,.svg,.webp" @change="onFile" />
+            <p class="text-xs text-gray-600">Upload dit logo. Kvadratiske formater virker bedst.</p>
+            <div v-if="logoUrl" class="text-xs text-gray-700">
+              Nuværende logo:
+              <a class="text-blue-700 hover:underline" :href="logoUrl" target="_blank" rel="noreferrer">{{ fileNameFromUrl(logoUrl) }}</a>
+            </div>
+          </div>
+          <div v-if="logoUrl && isImagePreviewUrl(logoUrl)" class="md:justify-self-end">
+            <img :src="logoUrl" alt="Nuværende logo" class="max-h-28 rounded border bg-white p-1" />
+          </div>
         </div>
 
         <div class="grid gap-2">
@@ -134,6 +136,21 @@
             class="w-full rounded border bg-gray-50 px-3 py-2"
           />
           <p class="text-xs text-gray-600">Dit firmas officielle slogan eller tagline.</p>
+        </div>
+
+        <div class="grid gap-4 rounded border border-gray-200 p-3 md:grid-cols-2 md:items-start">
+          <div class="grid gap-2">
+            <label class="text-sm font-medium" for="template">Design template (png/jpg/webp/pdf)</label>
+            <input id="template" class="w-full" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" @change="onTemplateFile" />
+            <p class="text-xs text-gray-600">Upload en reference til designstil (farver/typografi/layout). Bruges som stil-reference af AI'en.</p>
+            <div v-if="templateUrl" class="text-xs text-gray-700">
+              Nuværende template:
+              <a class="text-blue-700 hover:underline" :href="templateUrl" target="_blank" rel="noreferrer">{{ fileNameFromUrl(templateUrl) }}</a>
+            </div>
+          </div>
+          <div v-if="templateUrl && isImagePreviewUrl(templateUrl)" class="md:justify-self-end">
+            <img :src="templateUrl" alt="Nuværende design template" class="max-h-32 rounded border bg-white p-1" />
+          </div>
         </div>
 
         <div class="grid gap-2">
@@ -518,30 +535,6 @@
         <div v-if="message" class="text-sm text-gray-700">{{ message }}</div>
       </div>
     </form>
-
-    <div class="rounded-xl border bg-white p-4">
-      <div class="flex items-center justify-between">
-        <div class="text-sm font-medium">Preview</div>
-        <div class="flex gap-2">
-          <div class="h-6 w-6 rounded" :style="{ backgroundColor: state.primaryColor1 }"></div>
-          <div class="h-6 w-6 rounded" :style="{ backgroundColor: state.primaryColor2 }"></div>
-          <div v-if="state.primaryColor3" class="h-6 w-6 rounded" :style="{ backgroundColor: state.primaryColor3 }"></div>
-          <div v-if="state.primaryColor4" class="h-6 w-6 rounded" :style="{ backgroundColor: state.primaryColor4 }"></div>
-        </div>
-      </div>
-
-      <div class="mt-4 grid gap-3 md:grid-cols-[120px_1fr]">
-        <div class="flex items-center justify-center rounded border bg-gray-50 p-2">
-          <img v-if="logoUrl" :src="logoUrl" class="max-h-24 max-w-full" />
-          <div v-else class="text-xs text-gray-500">Ingen logo</div>
-        </div>
-        <div class="grid gap-1">
-          <div class="font-semibold">{{ state.companyName }}</div>
-          <div class="text-sm text-gray-700">{{ state.companyDescription }}</div>
-          <div class="text-sm text-gray-700">{{ state.audienceDescription }}</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -774,6 +767,27 @@ function onTemplateFile(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0] ?? null
   templateFile.value = file
+}
+
+function fileNameFromUrl(url: string | null) {
+  if (!url) return 'Fil'
+  try {
+    const pathname = new URL(url).pathname
+    const last = pathname.split('/').filter(Boolean).pop()
+    return last ? decodeURIComponent(last) : 'Fil'
+  } catch {
+    return 'Fil'
+  }
+}
+
+function isImagePreviewUrl(url: string | null) {
+  if (!url) return false
+  try {
+    const pathname = new URL(url).pathname.toLowerCase()
+    return ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].some((ext) => pathname.endsWith(ext))
+  } catch {
+    return false
+  }
 }
 
 async function load() {
