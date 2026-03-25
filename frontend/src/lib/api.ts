@@ -15,6 +15,19 @@ export type Brand = {
   updatedAt?: string
 }
 
+export async function getFacebookAccountStatus(): Promise<{
+  connected: boolean
+  pages: { id: string; name: string }[]
+  expires_at: string | null
+}> {
+  const res = await apiFetch('/api/integrations/facebook/account/status')
+  return (await res.json()) as {
+    connected: boolean
+    pages: { id: string; name: string }[]
+    expires_at: string | null
+  }
+}
+
 export type SubscriptionStatus = {
   status: 'none' | 'active' | 'expired'
   plan: {
@@ -368,7 +381,7 @@ export async function listAllowedAdSizes(): Promise<{ sizes: { width: number; he
 }
 
 export async function startFacebookConnect(input: {
-  instance_id: number
+  instance_id?: number
   return_to?: string
 }): Promise<{ url: string }> {
   const res = await apiFetch('/api/integrations/facebook/start', {
@@ -381,18 +394,19 @@ export async function startFacebookConnect(input: {
 
 export async function resolveFacebookConnect(input: {
   connect_token: string
-}): Promise<{ instance_id: number; pages: { id: string; name: string }[] }> {
+}): Promise<{ instance_id: number | null; pages: { id: string; name: string }[] }> {
   const res = await apiFetch('/api/integrations/facebook/connect/resolve', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
   })
-  return (await res.json()) as { instance_id: number; pages: { id: string; name: string }[] }
+  return (await res.json()) as { instance_id: number | null; pages: { id: string; name: string }[] }
 }
 
 export async function selectFacebookPage(input: {
-  connect_token: string
+  connect_token?: string
   page_id: string
+  instance_id?: number
 }): Promise<{ ok: true; instance: IntegrationInstance }> {
   const res = await apiFetch('/api/integrations/facebook/select-page', {
     method: 'POST',
@@ -411,6 +425,13 @@ export async function disconnectFacebookPage(input: {
     body: JSON.stringify(input),
   })
   return (await res.json()) as { ok: true; instance: IntegrationInstance }
+}
+
+export async function disconnectFacebookAccount(): Promise<{ ok: true }> {
+  const res = await apiFetch('/api/integrations/facebook/account/disconnect', {
+    method: 'POST',
+  })
+  return (await res.json()) as { ok: true }
 }
 
 export type AdCreateDebug = {

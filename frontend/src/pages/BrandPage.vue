@@ -35,21 +35,21 @@
 
         <div class="grid gap-2">
           <label class="text-sm font-medium" for="companyDescription">Firma beskrivelse</label>
-          <textarea
+          <ExpandableTextarea
             id="companyDescription"
             v-model="state.companyDescription"
             class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
-          ></textarea>
+          />
           <p class="text-xs text-gray-600">Beskriv kort, hvad dit firma laver. Bruges af AI'en til at skrive annoncetekster.</p>
         </div>
 
         <div class="grid gap-2">
           <label class="text-sm font-medium" for="audienceDescription">Målgruppe beskrivelse</label>
-          <textarea
+          <ExpandableTextarea
             id="audienceDescription"
             v-model="state.audienceDescription"
             class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
-          ></textarea>
+          />
           <p class="text-xs text-gray-600">Hvem er dine kunder? Beskriv dem her, så AI'en kan ramme den rigtige tone.</p>
         </div>
       </div>
@@ -138,17 +138,17 @@
 
         <div class="grid gap-2">
           <label class="text-sm font-medium" for="visual_guidelines">Beskrivelse (visuelle guidelines)</label>
-          <textarea
+          <ExpandableTextarea
             id="visual_guidelines"
             v-model="state.visual_guidelines"
-            class="min-h-24 w-full rounded border bg-gray-50 px-3 py-2"
-          ></textarea>
+            class="min-h-[200px] w-full rounded border bg-gray-50 px-3 py-2"
+          />
           <p class="text-xs text-gray-600">Her kan du beskrive specifikke ønsker til det visuelle udtryk. F.eks. 'Brug altid en lys baggrund' eller 'Placer logoet i øverste højre hjørne'.</p>
         </div>
         </div>
       </details>
 
-      <details class="group rounded-xl border bg-white">
+      <details ref="integrationsDetailsRef" class="group rounded-xl border bg-white">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 select-none">
           <div>
             <h2 class="text-lg font-semibold">Integrationer</h2>
@@ -189,7 +189,7 @@
 
           <div v-if="integrationsMessage" class="text-sm text-gray-700">{{ integrationsMessage }}</div>
 
-          <div v-if="integrationForm.open" class="grid gap-4 rounded border bg-gray-50 p-4">
+          <div v-if="integrationForm.open" class="grid gap-4 rounded border bg-gray-100 p-4">
             <div class="flex items-center justify-between">
               <div class="text-sm font-semibold text-gray-900">
                 {{ integrationForm.mode === 'create' ? 'Opret integration' : 'Rediger integration' }}
@@ -204,6 +204,7 @@
                 v-model="integrationForm.integrationKey"
                 class="w-full rounded border bg-gray-50 px-3 py-2"
               >
+                <option value="" disabled>Vælg integration</option>
                 <option v-for="def in integrationDefinitions" :key="def.key" :value="def.key">
                   {{ def.name }}
                 </option>
@@ -214,12 +215,6 @@
               <label class="text-sm font-medium" for="integrationName">Navn</label>
               <input id="integrationName" v-model="integrationForm.name" class="w-full rounded border bg-gray-50 px-3 py-2" />
             </div>
-            <div v-else class="grid gap-2">
-              <div class="text-sm font-medium text-gray-700">Navn</div>
-              <div class="rounded border bg-white px-3 py-2 text-sm text-gray-700">
-                {{ selectedIntegrationDefinition?.name || 'Network embed' }}
-              </div>
-            </div>
 
             <div class="flex items-center gap-3">
               <input id="integrationActive" v-model="integrationForm.isActive" type="checkbox" class="h-4 w-4" />
@@ -229,55 +224,55 @@
             <div v-if="integrationForm.integrationKey === 'facebook_page'" class="grid gap-4 rounded border bg-white p-4">
               <div>
                 <div class="text-sm font-semibold text-gray-900">Facebook</div>
-                <p class="mt-1 text-xs text-gray-600">Kobl en Facebook-side på denne integration, så annoncer kan postes som opslag.</p>
               </div>
 
               <div v-if="facebookError" class="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{{ facebookError }}</div>
 
-              <div v-if="facebookConnected" class="grid gap-2">
-                <div class="text-xs text-gray-600">Forbundet til</div>
-                <div class="rounded border bg-gray-50 px-3 py-2 text-sm text-gray-900">
-                  {{ facebookPageName || facebookPageId }}
-                </div>
-              </div>
-              <div v-else class="text-sm text-gray-700">Ikke forbundet</div>
+              <div v-if="facebookAccountConnected && !facebookConnected" class="text-sm text-gray-700">Ingen side valgt endnu</div>
 
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  class="rounded bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                  type="button"
-                  :disabled="facebookConnecting || integrationForm.mode !== 'edit' || !integrationForm.id"
-                  @click="connectFacebook"
-                >
-                  Kobl Facebook på
-                </button>
-
-                <button
-                  v-if="facebookConnected"
-                  class="rounded border px-3 py-2 text-xs font-semibold hover:bg-gray-50 disabled:opacity-50"
-                  type="button"
-                  :disabled="facebookDisconnecting || integrationForm.mode !== 'edit' || !integrationForm.id"
-                  @click="disconnectFacebook"
-                >
-                  Frakobl
-                </button>
-              </div>
-
-              <div v-if="facebookPages.length > 0" class="grid gap-2">
+              <div v-if="facebookAccountConnected && facebookPages.length > 0" class="grid gap-2">
                 <label class="text-sm font-medium" for="facebookPageSelect">Vælg side</label>
-                <select id="facebookPageSelect" v-model="facebookSelectedPageId" class="w-full rounded border bg-gray-50 px-3 py-2">
+                <select id="facebookPageSelect" v-model="facebookSelectedPageId" class="w-full rounded border bg-gray-50 px-3 py-2" :disabled="facebookSelecting" @change="selectFacebookPage">
                   <option value="" disabled>Vælg...</option>
                   <option v-for="p in facebookPages" :key="p.id" :value="p.id">{{ p.name }}</option>
                 </select>
+                <p class="text-xs text-gray-600">Vælg side her, og klik derefter kun på Gem for at gemme integrationen.</p>
+              </div>
 
-                <button
-                  class="mt-1 rounded bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                  type="button"
-                  :disabled="facebookSelecting || !facebookConnectToken || !facebookSelectedPageId"
-                  @click="selectFacebookPage"
-                >
-                  Gem valg
-                </button>
+              <div v-if="!facebookAccountConnected" class="grid gap-3 rounded border border-yellow-200 bg-yellow-50 p-3">
+                <div class="text-xs text-yellow-800">Forbind din Facebook-konto først for at hente sider.</div>
+                <div>
+                  <button
+                    class="rounded bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                    type="button"
+                    :disabled="facebookConnecting"
+                    @click="connectFacebookAccount"
+                  >
+                    Forbind til Facebook
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="flex flex-wrap items-center justify-between gap-2 rounded border bg-gray-50 px-3 py-2">
+                <div class="text-xs text-green-700">Forbundet til Facebook</div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    class="rounded border px-2 py-1 text-xs font-medium hover:bg-gray-100 disabled:opacity-50"
+                    type="button"
+                    :disabled="facebookConnecting"
+                    @click="connectFacebookAccount"
+                  >
+                    Reconnect
+                  </button>
+                  <button
+                    class="rounded border px-2 py-1 text-xs font-medium hover:bg-gray-100 disabled:opacity-50"
+                    type="button"
+                    :disabled="facebookAccountDisconnecting"
+                    @click="disconnectFacebookAccountSession"
+                  >
+                    Afbryd FB
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -339,12 +334,12 @@
 
               <div v-if="integrationForm.id" class="grid gap-2">
                 <label class="text-sm font-medium" for="embedCode">Embed-kode</label>
-                <textarea
+                <ExpandableTextarea
                   id="embedCode"
                   readonly
                   class="min-h-16 w-full rounded border bg-gray-50 px-3 py-2 font-mono text-xs"
-                  :value="getEmbedCode(integrationForm.id)"
-                ></textarea>
+                  :model-value="getEmbedCode(integrationForm.id)"
+                />
               </div>
             </div>
 
@@ -352,7 +347,7 @@
               <button
                 class="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
                 type="button"
-                :disabled="integrationFormSaving || !!slideshowIntervalError || !!slideshowItemsPerViewError"
+                :disabled="integrationFormSaving || !integrationForm.integrationKey || !!slideshowIntervalError || !!slideshowItemsPerViewError"
                 @click="saveIntegration"
               >
                 Gem
@@ -373,7 +368,7 @@
             </div>
           </div>
 
-          <div v-if="integrationInstances.length === 0" class="text-sm text-gray-600">Ingen integrationer endnu.</div>
+          <div v-if="integrationInstances.length === 0" class="text-sm text-red-600">Ingen integrationer endnu.</div>
 
           <div v-else class="grid gap-3">
             <button
@@ -551,12 +546,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   createIntegrationInstance,
   deleteIntegrationInstance,
-  disconnectFacebookPage,
+  disconnectFacebookAccount,
+  getFacebookAccountStatus,
   getBrand,
   getSubscription,
   getTokensSummary,
@@ -572,6 +568,7 @@ import {
   type IntegrationDefinition,
   type IntegrationInstance,
 } from '../lib/api'
+import ExpandableTextarea from '../components/ExpandableTextarea.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -624,7 +621,7 @@ const integrationForm = ref<{
   open: false,
   mode: 'create',
   id: null,
-  integrationKey: 'website_embed',
+  integrationKey: '',
   name: '',
   isActive: true,
   embedToken: '',
@@ -636,19 +633,28 @@ const integrationForm = ref<{
 
 const facebookConnecting = ref(false)
 const facebookSelecting = ref(false)
-const facebookDisconnecting = ref(false)
+const facebookAccountDisconnecting = ref(false)
 const facebookError = ref<string | null>(null)
-const facebookConnectToken = ref<string | null>(null)
+const facebookAccountConnected = ref(false)
 const facebookPages = ref<{ id: string; name: string }[]>([])
 const facebookSelectedPageId = ref('')
+const facebookDraftPageId = ref<string | null>(null)
+const facebookDraftPageName = ref<string | null>(null)
+const integrationsDetailsRef = ref<HTMLDetailsElement | null>(null)
 
 const facebookPageId = computed(() => {
+  if (integrationForm.value.mode === 'create') {
+    return facebookDraftPageId.value
+  }
   const inst = integrationInstances.value.find((i) => i.id === integrationForm.value.id)
   const v = inst?.config?.page_id
   return typeof v === 'string' && v.trim() !== '' ? v : null
 })
 
 const facebookPageName = computed(() => {
+  if (integrationForm.value.mode === 'create') {
+    return facebookDraftPageName.value
+  }
   const inst = integrationInstances.value.find((i) => i.id === integrationForm.value.id)
   const v = inst?.config?.page_name
   return typeof v === 'string' && v.trim() !== '' ? v : null
@@ -658,15 +664,11 @@ const facebookConnected = computed(() => {
   return Boolean(facebookPageId.value)
 })
 
-async function connectFacebook() {
-  if (!integrationForm.value.id) return
+async function connectFacebookAccount() {
   facebookError.value = null
   facebookConnecting.value = true
   try {
-    const res = await startFacebookConnect({
-      instance_id: integrationForm.value.id,
-      return_to: '/company',
-    })
+    const res = await startFacebookConnect({ return_to: '/company' })
     window.location.href = res.url
   } catch (e) {
     facebookError.value = e instanceof Error ? e.message : 'Kunne ikke starte Facebook login.'
@@ -675,38 +677,52 @@ async function connectFacebook() {
   }
 }
 
-async function selectFacebookPage() {
-  if (!facebookConnectToken.value || !facebookSelectedPageId.value) return
+function selectFacebookPage() {
+  if (!facebookSelectedPageId.value) return
+  const selected = facebookPages.value.find((p) => p.id === facebookSelectedPageId.value) ?? null
+  if (!selected) {
+    facebookError.value = 'Kunne ikke finde den valgte Facebook side.'
+    return
+  }
+
   facebookError.value = null
-  facebookSelecting.value = true
+  facebookDraftPageId.value = selected.id
+  facebookDraftPageName.value = selected.name
+  integrationForm.value.name = `Facebook Page (${selected.name})`
+}
+
+async function disconnectFacebookAccountSession() {
+  if (!confirm('Afbryd forbindelsen til Facebook-kontoen?')) return
+  facebookError.value = null
+  facebookAccountDisconnecting.value = true
   try {
-    await selectFacebookPageApi({
-      connect_token: facebookConnectToken.value,
-      page_id: facebookSelectedPageId.value,
-    })
-    facebookConnectToken.value = null
+    await disconnectFacebookAccount()
+    facebookAccountConnected.value = false
     facebookPages.value = []
     facebookSelectedPageId.value = ''
-    await loadIntegrations()
+    facebookDraftPageId.value = null
+    facebookDraftPageName.value = null
   } catch (e) {
-    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke gemme valg af Facebook side.'
+    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke afbryde Facebook-forbindelsen.'
   } finally {
-    facebookSelecting.value = false
+    facebookAccountDisconnecting.value = false
   }
 }
 
-async function disconnectFacebook() {
-  if (!integrationForm.value.id) return
-  if (!confirm('Frakobl Facebook fra denne integration?')) return
-  facebookError.value = null
-  facebookDisconnecting.value = true
+async function loadFacebookAccountStatus() {
   try {
-    await disconnectFacebookPage({ instance_id: integrationForm.value.id })
-    await loadIntegrations()
-  } catch (e) {
-    facebookError.value = e instanceof Error ? e.message : 'Kunne ikke frakoble Facebook.'
-  } finally {
-    facebookDisconnecting.value = false
+    const status = await getFacebookAccountStatus()
+    facebookAccountConnected.value = Boolean(status.connected)
+    facebookPages.value = Array.isArray(status.pages) ? status.pages : []
+
+    if (!facebookAccountConnected.value) {
+      facebookSelectedPageId.value = ''
+      facebookDraftPageId.value = null
+      facebookDraftPageName.value = null
+    }
+  } catch {
+    facebookAccountConnected.value = false
+    facebookPages.value = []
   }
 }
 
@@ -721,7 +737,11 @@ const isNetworkWebsiteEmbed = computed(() => {
 
 watch(
   () => integrationForm.value.integrationKey,
-  () => {
+  (nextKey, prevKey) => {
+    if (integrationForm.value.mode === 'create' && nextKey !== prevKey && nextKey === 'facebook_page') {
+      integrationForm.value.name = selectedIntegrationDefinition.value?.name || 'Facebook Page'
+    }
+
     if (isNetworkWebsiteEmbed.value) {
       integrationForm.value.name = selectedIntegrationDefinition.value?.name || 'Network embed'
     }
@@ -780,6 +800,7 @@ async function load() {
   tokensSummary.value = tokensSummaryResponse
 
   await loadIntegrations()
+  await loadFacebookAccountStatus()
 
   const token = typeof route.query.fb_connect_token === 'string' ? route.query.fb_connect_token : null
   if (token) {
@@ -790,15 +811,24 @@ async function load() {
 async function handleFacebookConnectToken(token: string) {
   facebookError.value = null
   try {
-    const res = await resolveFacebookConnect({ connect_token: token })
-    facebookConnectToken.value = token
-    facebookPages.value = Array.isArray(res.pages) ? res.pages : []
-    facebookSelectedPageId.value = ''
+    await resolveFacebookConnect({ connect_token: token })
+    await loadFacebookAccountStatus()
 
-    const inst = integrationInstances.value.find((i) => i.id === res.instance_id)
-    if (inst) {
-      startEditIntegration(inst)
+    integrationsDetailsRef.value?.setAttribute('open', 'open')
+    if (!integrationForm.value.open || integrationForm.value.integrationKey !== 'facebook_page') {
+      startCreateIntegration()
+      integrationForm.value.integrationKey = 'facebook_page'
     }
+
+    await nextTick()
+    integrationsDetailsRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+    if (facebookPages.value.length === 1) {
+      facebookSelectedPageId.value = facebookPages.value[0].id
+      selectFacebookPage()
+    }
+
+    integrationsMessage.value = 'Facebook-konto forbundet. Du kan nu vælge side i dine Facebook integrationer.'
 
     const nextQuery = { ...route.query }
     delete (nextQuery as any).fb_connect_token
@@ -822,7 +852,11 @@ async function loadIntegrations() {
     const sizes = await listAllowedAdSizes()
     allowedAdSizes.value = Array.isArray(sizes.sizes) ? sizes.sizes : []
 
-    if (integrationDefinitions.value.length > 0 && !integrationDefinitions.value.some((d) => d.key === integrationForm.value.integrationKey)) {
+    if (
+      integrationForm.value.mode !== 'create' &&
+      integrationDefinitions.value.length > 0 &&
+      !integrationDefinitions.value.some((d) => d.key === integrationForm.value.integrationKey)
+    ) {
       integrationForm.value.integrationKey = integrationDefinitions.value[0].key
     }
   } catch (e) {
@@ -844,11 +878,11 @@ function startCreateIntegration() {
   integrationForm.value.slideshowItemsPerView = 3
   integrationForm.value.slideshowIntervalMs = 4000
 
-  if (integrationDefinitions.value.length > 0) {
-    integrationForm.value.integrationKey = integrationDefinitions.value[0].key
-  } else {
-    integrationForm.value.integrationKey = 'website_embed'
-  }
+  integrationForm.value.integrationKey = ''
+
+  facebookSelectedPageId.value = ''
+  facebookDraftPageId.value = null
+  facebookDraftPageName.value = null
 }
 
 function startEditIntegration(inst: IntegrationInstance) {
@@ -867,10 +901,19 @@ function startEditIntegration(inst: IntegrationInstance) {
   integrationForm.value.viewMode = (inst.config?.view_mode === 'slideshow' ? 'slideshow' : 'grid')
   integrationForm.value.slideshowItemsPerView = Number(inst.config?.slideshow_items_per_view ?? 3)
   integrationForm.value.slideshowIntervalMs = Number(inst.config?.slideshow_interval_ms ?? 4000)
+
+  const pageId = typeof inst.config?.page_id === 'string' ? inst.config.page_id : ''
+  const pageName = typeof inst.config?.page_name === 'string' ? inst.config.page_name : ''
+  facebookSelectedPageId.value = pageId
+  facebookDraftPageId.value = pageId || null
+  facebookDraftPageName.value = pageName || null
 }
 
 function closeIntegrationForm() {
   integrationForm.value.open = false
+  facebookSelectedPageId.value = ''
+  facebookDraftPageId.value = null
+  facebookDraftPageName.value = null
 }
 
 function getEmbedCode(instanceId: number) {
@@ -880,6 +923,17 @@ function getEmbedCode(instanceId: number) {
 
 async function saveIntegration() {
   integrationsMessage.value = null
+
+  if (!integrationForm.value.integrationKey) {
+    integrationsMessage.value = 'Vælg en integration først.'
+    return
+  }
+
+  if (integrationForm.value.integrationKey === 'facebook_page' && !facebookSelectedPageId.value) {
+    integrationsMessage.value = 'Vælg en Facebook-side før du gemmer integrationen.'
+    return
+  }
+
   const viewMode = integrationForm.value.viewMode === 'slideshow' ? 'slideshow' : 'grid'
   const itemsPerViewRaw = Number(integrationForm.value.slideshowItemsPerView)
   const intervalMsRaw = Number(integrationForm.value.slideshowIntervalMs)
@@ -920,15 +974,33 @@ async function saveIntegration() {
               slideshow_items_per_view: itemsPerView,
               slideshow_interval_ms: intervalMs,
             }
+          : integrationForm.value.integrationKey === 'facebook_page'
+            ? {
+                page_id: facebookDraftPageId.value,
+                page_name: facebookDraftPageName.value,
+              }
           : (existingInst?.config ?? null),
     }
 
+    let savedInstanceId: number | null = integrationForm.value.id
+
     if (integrationForm.value.mode === 'create') {
-      await createIntegrationInstance(payload)
+      const created = await createIntegrationInstance(payload)
+      savedInstanceId = created.instance.id
       integrationsMessage.value = 'Integration oprettet'
     } else if (integrationForm.value.id) {
       await updateIntegrationInstance(integrationForm.value.id, payload)
       integrationsMessage.value = 'Integration opdateret'
+    }
+
+    if (integrationForm.value.integrationKey === 'facebook_page' && facebookSelectedPageId.value && savedInstanceId) {
+      await selectFacebookPageApi({
+        page_id: facebookSelectedPageId.value,
+        instance_id: savedInstanceId,
+      })
+      integrationsMessage.value = integrationForm.value.mode === 'create'
+        ? 'Integration oprettet og Facebook forbundet'
+        : 'Integration opdateret og Facebook forbundet'
     }
 
     await loadIntegrations()

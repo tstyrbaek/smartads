@@ -14,22 +14,44 @@ use Illuminate\Support\Str;
 
 class FacebookIntegrationController extends Controller
 {
+    public function accountStatus(Request $request): JsonResponse
+    {
+        $companyId = (int) $request->attributes->get('active_company_id');
+        $data = $this->getCompanySession($companyId);
+
+        if (!is_array($data)) {
+            return response()->json([
+                'connected' => false,
+                'pages' => [],
+                'expires_at' => null,
+            ]);
+        }
+
+        return response()->json([
+            'connected' => true,
+            'pages' => $this->extractPages($data),
+            'expires_at' => $data['expires_at'] ?? null,
+        ]);
+    }
+
     public function start(Request $request): JsonResponse
     {
         $companyId = (int) $request->attributes->get('active_company_id');
 
         $validated = $request->validate([
-            'instance_id' => ['required', 'integer', 'exists:integration_instances,id'],
+            'instance_id' => ['nullable', 'integer', 'exists:integration_instances,id'],
             'return_to' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $instanceId = (int) $validated['instance_id'];
+        $instanceId = isset($validated['instance_id']) ? (int) $validated['instance_id'] : 0;
         $returnTo = (string) ($validated['return_to'] ?? '/company');
 
-        $instance = IntegrationInstance::query()
-            ->where('company_id', $companyId)
-            ->where('integration_key', 'facebook_page')
-            ->findOrFail($instanceId);
+        if ($instanceId > 0) {
+            IntegrationInstance::query()
+                ->where('company_id', $companyId)
+                ->where('integration_key', 'facebook_page')
+                ->findOrFail($instanceId);
+        }
 
         $appId = (string) config('services.facebook.app_id', '');
         $redirectUri = (string) config('services.facebook.redirect_uri', '');
@@ -42,7 +64,7 @@ class FacebookIntegrationController extends Controller
 
         Cache::put('fb_oauth_state_' . $state, [
             'company_id' => $companyId,
-            'instance_id' => $instance->id,
+            'instance_id' => $instanceId > 0 ? $instanceId : null,
             'return_to' => $returnTo,
         ], now()->addMinutes(10));
 
@@ -239,6 +261,17 @@ class FacebookIntegrationController extends Controller
             'pages' => $pages,
         ], now()->addMinutes(10));
 
+        $companyId = (int) ($stateData['company_id'] ?? 0);
+        if ($companyId > 0) {
+            $this->putCompanySession($companyId, [
+                'company_id' => $companyId,
+                'instance_id' => null,
+                'user_access_token' => $userAccessToken,
+                'expires_at' => $expiresIn ? now()->addSeconds($expiresIn)->toISOString() : null,
+                'pages' => $pages,
+            ]);
+        }
+
         return redirect()->to($this->appendQueryParam($returnTo, 'fb_connect_token', $connectToken));
     }
 
@@ -269,7 +302,9 @@ class FacebookIntegrationController extends Controller
         }
 
         return response()->json([
-            'instance_id' => (int) ($data['instance_id'] ?? 0),
+            'instance_id' => isset($data['instance_id']) && is_numeric($data['instance_id']) && (int) $data['instance_id'] > 0
+                ? (int) $data['instance_id']
+                : null,
             'pages' => $pages,
         ]);
     }
@@ -279,19 +314,31 @@ class FacebookIntegrationController extends Controller
         $companyId = (int) $request->attributes->get('active_company_id');
 
         $validated = $request->validate([
-            'connect_token' => ['required', 'string', 'max:255'],
+            'connect_token' => ['nullable', 'string', 'max:255'],
             'page_id' => ['required', 'string', 'max:255'],
+            'instance_id' => ['nullable', 'integer', 'exists:integration_instances,id'],
         ]);
 
-        $connectToken = (string) $validated['connect_token'];
+        $connectToken = (string) ($validated['connect_token'] ?? '');
         $pageId = (string) $validated['page_id'];
 
-        $data = Cache::get('fb_connect_' . $connectToken);
+        $data = $connectToken !== '' ? Cache::get('fb_connect_' . $connectToken) : $this->getCompanySession($companyId);
+        if (!is_array($data) || (int) ($data['company_id'] ?? 0) !== $companyId) {
+            $data = $this->getCompanySession($companyId);
+        }
+
         if (!is_array($data) || (int) ($data['company_id'] ?? 0) !== $companyId) {
             return response()->json(['error' => 'invalid_connect_token'], 422);
         }
 
         $instanceId = (int) ($data['instance_id'] ?? 0);
+        if ($instanceId <= 0) {
+            $instanceId = isset($validated['instance_id']) ? (int) $validated['instance_id'] : 0;
+        }
+
+        if ($instanceId <= 0) {
+            return response()->json(['error' => 'instance_required'], 422);
+        }
 
         $instance = IntegrationInstance::query()
             ->where('company_id', $companyId)
@@ -350,12 +397,18 @@ class FacebookIntegrationController extends Controller
             'credentials' => $credentials,
         ])->save();
 
-        Cache::forget('fb_connect_' . $connectToken);
-
         return response()->json([
             'ok' => true,
             'instance' => $instance->only(['id', 'company_id', 'integration_key', 'name', 'is_active', 'config', 'created_at', 'updated_at']),
         ]);
+    }
+
+    public function disconnectAccount(Request $request): JsonResponse
+    {
+        $companyId = (int) $request->attributes->get('active_company_id');
+        Cache::forget($this->companySessionKey($companyId));
+
+        return response()->json(['ok' => true]);
     }
 
     public function disconnect(Request $request): JsonResponse
@@ -389,5 +442,36 @@ class FacebookIntegrationController extends Controller
     {
         $sep = str_contains($url, '?') ? '&' : '?';
         return $url . $sep . urlencode($key) . '=' . urlencode($value);
+    }
+
+    private function companySessionKey(int $companyId): string
+    {
+        return 'fb_company_session_' . $companyId;
+    }
+
+    private function getCompanySession(int $companyId): mixed
+    {
+        return Cache::get($this->companySessionKey($companyId));
+    }
+
+    private function putCompanySession(int $companyId, array $data): void
+    {
+        Cache::put($this->companySessionKey($companyId), $data, now()->addDays(30));
+    }
+
+    private function extractPages(array $data): array
+    {
+        $pages = [];
+        foreach (($data['pages'] ?? []) as $p) {
+            if (!is_array($p)) {
+                continue;
+            }
+            $pages[] = [
+                'id' => (string) ($p['id'] ?? ''),
+                'name' => (string) ($p['name'] ?? ''),
+            ];
+        }
+
+        return $pages;
     }
 }

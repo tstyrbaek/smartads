@@ -228,9 +228,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('api.company')->group(function () {
+        Route::get('/integrations/facebook/account/status', [FacebookIntegrationController::class, 'accountStatus']);
         Route::post('/integrations/facebook/start', [FacebookIntegrationController::class, 'start']);
         Route::post('/integrations/facebook/connect/resolve', [FacebookIntegrationController::class, 'resolve']);
         Route::post('/integrations/facebook/select-page', [FacebookIntegrationController::class, 'selectPage']);
+        Route::post('/integrations/facebook/account/disconnect', [FacebookIntegrationController::class, 'disconnectAccount']);
         Route::post('/integrations/facebook/disconnect', [FacebookIntegrationController::class, 'disconnect']);
 
         Route::get('/meta/ad-sizes', [MetaController::class, 'adSizes']);
